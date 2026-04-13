@@ -2,7 +2,10 @@ import "dotenv/config";
 import { PrismaClient } from "../lib/generated/prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
 import bcrypt from "bcryptjs";
+import fs from "fs";
+import path from "path";
 import { syncProducts, type N1COProductSync } from "../lib/n1co";
+import { uploadImage, isS3Configured } from "../lib/s3";
 
 const prisma = new PrismaClient({
   adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
@@ -386,32 +389,62 @@ async function main() {
   });
   console.log(`Seeded admin user: ${admin.email}`);
 
-  // Seed events
+  // Upload seed images to S3 and build image URL map
+  const imageUrlMap = new Map<string, string>();
+  const publicDir = path.resolve(__dirname, "../public");
+
+  if (isS3Configured()) {
+    const uniqueImages = [...new Set(EVENTS.map((e) => e.image))];
+    for (const localPath of uniqueImages) {
+      const filePath = path.join(publicDir, localPath);
+      if (!fs.existsSync(filePath)) {
+        console.warn(`Image not found: ${filePath}, keeping local path`);
+        imageUrlMap.set(localPath, localPath);
+        continue;
+      }
+      const file = fs.readFileSync(filePath);
+      const ext = path.extname(localPath);
+      const key = `events/${path.basename(localPath, ext)}-${Date.now()}${ext}`;
+      const contentType = ext === ".png" ? "image/png" : "image/jpeg";
+      const url = await uploadImage(file, key, contentType);
+      imageUrlMap.set(localPath, url);
+      console.log(`Uploaded ${localPath} -> ${url}`);
+    }
+    console.log(`Uploaded ${imageUrlMap.size} images to S3`);
+  } else {
+    console.warn("S3 not configured, keeping local image paths");
+  }
+
+  // Seed events (use S3 URLs when available)
   for (const event of EVENTS) {
+    const image = imageUrlMap.get(event.image) ?? event.image;
     await prisma.event.upsert({
       where: { sku: event.sku },
       update: {},
-      create: { id: crypto.randomUUID(), ...event },
+      create: { id: crypto.randomUUID(), ...event, image },
     });
   }
   console.log(`Seeded ${EVENTS.length} events`);
 
   // Sync products to N1CO
-  const n1coProducts: N1COProductSync[] = EVENTS.map((event) => ({
-    sku: event.sku,
-    name: event.name,
-    description: event.description,
-    extraDescription: event.longDescription,
-    stock: event.availableTickets,
-    price: event.priceInCents / 100,
-    collections: [event.category],
-    image: event.image,
-    enabled: true,
-    salesChannels: ["PaymentLink"],
-    locations: [{ locationCode: event.venue, isAvailable: true }],
-    modifiers: [],
-    images: [event.image],
-  }));
+  const n1coProducts: N1COProductSync[] = EVENTS.map((event) => {
+    const image = imageUrlMap.get(event.image) ?? event.image;
+    return {
+      sku: event.sku,
+      name: event.name,
+      description: event.description,
+      extraDescription: event.longDescription,
+      stock: event.availableTickets,
+      price: event.priceInCents / 100,
+      collections: [event.category],
+      image,
+      enabled: true,
+      salesChannels: ["PaymentLink"],
+      locations: [{ locationCode: event.venue, isAvailable: true }],
+      modifiers: [],
+      images: [image],
+    };
+  });
 
   const collections = [
     { code: "cine", name: "Cine", description: "Peliculas", image: "", parentCode: "" },

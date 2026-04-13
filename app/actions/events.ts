@@ -3,25 +3,27 @@
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
 import { syncProducts, type N1COProductSync } from "@/lib/n1co"
-import type { EventCategory } from "@/lib/generated/prisma/client"
+import { uploadImage, deleteImage } from "@/lib/s3"
+import path from "path"
 
-const eventSchema = z.object({
+const eventFieldsSchema = z.object({
   sku: z.string().min(1),
   name: z.string().min(1),
   description: z.string().min(1),
   longDescription: z.string().min(1),
   category: z.enum(["cine", "teatro", "concierto", "popup"]),
-  image: z.string().min(1),
   date: z.string().min(1),
   time: z.string().min(1),
   venue: z.string().min(1),
   city: z.string().min(1),
-  priceInCents: z.number().int().positive(),
-  availableTickets: z.number().int().nonnegative(),
-  featured: z.boolean().default(false),
+  priceInCents: z.coerce.number().int().positive(),
+  availableTickets: z.coerce.number().int().nonnegative(),
+  featured: z.coerce.boolean().default(false),
 })
 
-function toN1COProduct(event: z.infer<typeof eventSchema>): N1COProductSync {
+function toN1COProduct(
+  event: z.infer<typeof eventFieldsSchema> & { image: string },
+): N1COProductSync {
   return {
     sku: event.sku,
     name: event.name,
@@ -39,35 +41,72 @@ function toN1COProduct(event: z.infer<typeof eventSchema>): N1COProductSync {
   }
 }
 
-export async function createEvent(data: z.infer<typeof eventSchema>) {
-  const parsed = eventSchema.safeParse(data)
+async function uploadEventImage(file: File, sku: string): Promise<string> {
+  const buffer = Buffer.from(await file.arrayBuffer())
+  const ext = path.extname(file.name) || ".jpg"
+  const key = `events/${sku}-${Date.now()}${ext}`
+  return uploadImage(buffer, key, file.type || "image/jpeg")
+}
+
+export async function createEvent(formData: FormData) {
+  const fields = Object.fromEntries(formData.entries())
+  const imageFile = formData.get("image") as File | null
+
+  if (!imageFile || imageFile.size === 0) {
+    return { error: { image: ["Image file is required"] } }
+  }
+
+  const parsed = eventFieldsSchema.safeParse(fields)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
   }
 
-  const event = await prisma.event.create({ data: parsed.data })
+  const imageUrl = await uploadEventImage(imageFile, parsed.data.sku)
+  const eventData = { ...parsed.data, image: imageUrl }
+
+  const event = await prisma.event.create({ data: eventData })
 
   try {
-    await syncProducts([toN1COProduct(parsed.data)])
+    await syncProducts([toN1COProduct(eventData)])
   } catch (error) {
-    console.warn("N1CO sync failed on create:", error instanceof Error ? error.message : error)
+    console.warn(
+      "N1CO sync failed on create:",
+      error instanceof Error ? error.message : error,
+    )
   }
 
   return { event }
 }
 
-export async function updateEvent(id: string, data: z.infer<typeof eventSchema>) {
-  const parsed = eventSchema.safeParse(data)
+export async function updateEvent(id: string, formData: FormData) {
+  const fields = Object.fromEntries(formData.entries())
+  const imageFile = formData.get("image") as File | null
+
+  const parsed = eventFieldsSchema.safeParse(fields)
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors }
   }
 
-  const event = await prisma.event.update({ where: { id }, data: parsed.data })
+  const existing = await prisma.event.findUniqueOrThrow({ where: { id } })
+
+  let imageUrl: string
+  if (imageFile && imageFile.size > 0) {
+    await deleteImage(existing.image)
+    imageUrl = await uploadEventImage(imageFile, parsed.data.sku)
+  } else {
+    imageUrl = existing.image
+  }
+
+  const eventData = { ...parsed.data, image: imageUrl }
+  const event = await prisma.event.update({ where: { id }, data: eventData })
 
   try {
-    await syncProducts([toN1COProduct(parsed.data)])
+    await syncProducts([toN1COProduct(eventData)])
   } catch (error) {
-    console.warn("N1CO sync failed on update:", error instanceof Error ? error.message : error)
+    console.warn(
+      "N1CO sync failed on update:",
+      error instanceof Error ? error.message : error,
+    )
   }
 
   return { event }
