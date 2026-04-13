@@ -1,0 +1,74 @@
+"use server"
+
+import { z } from "zod"
+import { prisma } from "@/lib/prisma"
+import { syncProducts, type N1COProductSync } from "@/lib/n1co"
+import type { EventCategory } from "@/lib/generated/prisma/client"
+
+const eventSchema = z.object({
+  sku: z.string().min(1),
+  name: z.string().min(1),
+  description: z.string().min(1),
+  longDescription: z.string().min(1),
+  category: z.enum(["cine", "teatro", "concierto", "popup"]),
+  image: z.string().min(1),
+  date: z.string().min(1),
+  time: z.string().min(1),
+  venue: z.string().min(1),
+  city: z.string().min(1),
+  priceInCents: z.number().int().positive(),
+  availableTickets: z.number().int().nonnegative(),
+  featured: z.boolean().default(false),
+})
+
+function toN1COProduct(event: z.infer<typeof eventSchema>): N1COProductSync {
+  return {
+    sku: event.sku,
+    name: event.name,
+    description: event.description,
+    extraDescription: event.longDescription,
+    stock: event.availableTickets,
+    price: event.priceInCents / 100,
+    collections: [event.category],
+    image: event.image,
+    enabled: true,
+    salesChannels: ["PaymentLink"],
+    locations: [{ locationCode: event.venue, isAvailable: true }],
+    modifiers: [],
+    images: [event.image],
+  }
+}
+
+export async function createEvent(data: z.infer<typeof eventSchema>) {
+  const parsed = eventSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors }
+  }
+
+  const event = await prisma.event.create({ data: parsed.data })
+
+  try {
+    await syncProducts([toN1COProduct(parsed.data)])
+  } catch (error) {
+    console.warn("N1CO sync failed on create:", error instanceof Error ? error.message : error)
+  }
+
+  return { event }
+}
+
+export async function updateEvent(id: string, data: z.infer<typeof eventSchema>) {
+  const parsed = eventSchema.safeParse(data)
+  if (!parsed.success) {
+    return { error: parsed.error.flatten().fieldErrors }
+  }
+
+  const event = await prisma.event.update({ where: { id }, data: parsed.data })
+
+  try {
+    await syncProducts([toN1COProduct(parsed.data)])
+  } catch (error) {
+    console.warn("N1CO sync failed on update:", error instanceof Error ? error.message : error)
+  }
+
+  return { event }
+}
