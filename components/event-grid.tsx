@@ -2,20 +2,24 @@
 
 import { useState, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { EVENTS, type EventCategory } from "@/lib/events"
+import { type EventCategory, type TicketEvent } from "@/lib/events"
 import EventCard from "./event-card"
 import EventFilters from "./event-filters"
 
 const ITEMS_PER_PAGE = 12
 
-export default function EventGrid() {
+interface EventGridProps {
+  events: TicketEvent[]
+}
+
+export default function EventGrid({ events }: EventGridProps) {
   const [filter, setFilter] = useState<EventCategory | "all">("all")
   const [page, setPage] = useState(1)
 
   const filtered = useMemo(() => {
-    if (filter === "all") return EVENTS
-    return EVENTS.filter((e) => e.category === filter)
-  }, [filter])
+    if (filter === "all") return events
+    return events.filter((e) => e.category === filter)
+  }, [filter, events])
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE)
   const paginated = filtered.slice(

@@ -1,7 +1,7 @@
 "use server"
 
 import { stripe } from "@/lib/stripe"
-import { EVENTS } from "@/lib/events"
+import { prisma } from "@/lib/prisma"
 
 interface CartLineItem {
   eventId: string
@@ -9,8 +9,13 @@ interface CartLineItem {
 }
 
 export async function startCheckoutSession(cartItems: CartLineItem[]) {
+  const eventIds = cartItems.map((item) => item.eventId)
+  const events = await prisma.event.findMany({
+    where: { id: { in: eventIds } },
+  })
+
   const lineItems = cartItems.map((item) => {
-    const event = EVENTS.find((e) => e.id === item.eventId)
+    const event = events.find((e) => e.id === item.eventId)
     if (!event) {
       throw new Error(`Event with id "${item.eventId}" not found`)
     }
