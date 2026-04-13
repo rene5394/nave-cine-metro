@@ -1,6 +1,6 @@
 ---
 name: nextjs-app-router
-description: "Use this agent when working on Next.js projects that use the App Router, including creating new pages, layouts, components, API routes, or restructuring existing code to follow App Router best practices. This includes tasks involving server components, client components, data fetching, routing, middleware, and project organization.\\n\\nExamples:\\n\\n- User: \"Create a new dashboard page with a sidebar layout and data fetching from our API\"\\n  Assistant: \"I'll use the Next.js App Router agent to scaffold this properly with server components and the right folder structure.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create the dashboard page with proper App Router patterns.)\\n\\n- User: \"Refactor this page to use server-side data fetching instead of useEffect\"\\n  Assistant: \"Let me use the Next.js App Router agent to refactor this to server-first data fetching.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to convert client-side fetching to server component patterns.)\\n\\n- User: \"Add a new API endpoint for user authentication\"\\n  Assistant: \"I'll use the Next.js App Router agent to create the route handler following App Router conventions.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create the route handler in the app/api/ directory.)\\n\\n- User: \"I need a reusable modal component that works with our Next.js app\"\\n  Assistant: \"Let me use the Next.js App Router agent to build this component with the correct client/server boundary considerations.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create the component with proper 'use client' directives where needed.)"
+description: "Use this agent when working on Next.js projects that use the App Router, including creating new pages, layouts, components, server actions, or restructuring existing code to follow App Router best practices. This includes tasks involving server components, client components, data fetching, routing, middleware, and project organization.\\n\\nExamples:\\n\\n- User: \"Create a new dashboard page with a sidebar layout and data fetching\"\\n  Assistant: \"I'll use the Next.js App Router agent to scaffold this properly with server components and the right folder structure.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create the dashboard page with proper App Router patterns.)\\n\\n- User: \"Refactor this page to use server-side data fetching instead of useEffect\"\\n  Assistant: \"Let me use the Next.js App Router agent to refactor this to server-first data fetching.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to convert client-side fetching to server component patterns.)\\n\\n- User: \"Add user authentication logic\"\\n  Assistant: \"I'll use the Next.js App Router agent to create the server actions following App Router conventions.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create server actions in app/actions/.)\\n\\n- User: \"I need a reusable modal component that works with our Next.js app\"\\n  Assistant: \"Let me use the Next.js App Router agent to build this component with the correct client/server boundary considerations.\"\\n  (Use the Agent tool to launch the nextjs-app-router agent to create the component with proper 'use client' directives where needed.)"
 model: sonnet
 color: blue
 memory: project
@@ -15,7 +15,8 @@ Always organize code following this modular structure:
 ```
 app/              → Routes, layouts, pages, loading/error states
   (group)/        → Route groups for logical organization without affecting URL
-  api/            → Route handlers (API endpoints)
+  actions/        → Server actions organized by domain (auth.ts, events.ts)
+  api/            → Only for webhooks and third-party callback endpoints
 components/       → Reusable UI components
   ui/             → Primitive/base components (buttons, inputs, cards)
   features/       → Feature-specific composed components
@@ -53,11 +54,13 @@ services/         → Data access layer, API clients, external service integrati
 - Use Route Groups `(groupName)` to organize routes without affecting the URL path.
 - Use `page.tsx` as the leaf route component — always a Server Component unless absolutely necessary.
 
-### API Route Handlers
-- Place in `app/api/` using `route.ts` files.
-- Export named functions matching HTTP methods: `GET`, `POST`, `PUT`, `DELETE`, `PATCH`.
-- Use `NextRequest` and `NextResponse` from `next/server`.
-- Validate inputs. Return proper HTTP status codes and structured JSON responses.
+### Server Actions
+- Use `'use server'` directive at the top of action files.
+- Place server actions in `app/actions/` organized by domain (e.g., `auth.ts`, `events.ts`, `users.ts`).
+- Validate all inputs with `zod` before processing.
+- Return structured results (e.g., `{ success: true, data }` or `{ success: false, error }`) instead of throwing errors.
+- Server actions can be called directly from Client Components via form `action` prop or programmatically.
+- Only use `app/api/` route handlers for webhooks or third-party callback endpoints that require a public URL.
 
 ### Data Access Layer (services/)
 - Abstract all external API calls, database queries, and third-party integrations into `services/`.
@@ -88,6 +91,7 @@ services/         → Data access layer, API clients, external service integrati
 - ❌ Do NOT use the legacy `pages/` directory patterns (getServerSideProps, getStaticProps).
 - ❌ Do NOT nest `layout.tsx` files unnecessarily — only when the layout genuinely differs.
 - ❌ Do NOT use `router.push()` when `<Link>` would suffice.
+- ❌ Do NOT create API route handlers when a server action would work — only use `app/api/` for webhooks and third-party callbacks.
 
 ## Workflow
 1. **Understand the requirement** — clarify the feature, its data needs, and interactivity requirements.
