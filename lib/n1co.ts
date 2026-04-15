@@ -3,8 +3,37 @@ const N1CO_BASE_URL =
     ? 'https://api.n1co.com/api/v3'
     : 'https://api-sandbox.n1co.shop/api/v3'
 
-const CLIENT_ID = process.env.NEXT_PUBLIC_N1CO_CLIENT_ID
+const N1CO_PAY_BASE_URL =
+  process.env.N1CO_ENV === 'live'
+    ? 'https://api-pay.n1co.shop/api'
+    : 'https://api-pay-sandbox.n1co.shop/api'
+
+const CLIENT_ID = process.env.N1CO_CLIENT_ID
 const CLIENT_SECRET = process.env.N1CO_CLIENT_SECRET
+const PAY_SECRET = process.env.N1CO_PAY_SECRET
+
+export interface N1COCheckoutLinkParams {
+  orderName: string
+  orderReference: string
+  lineItems: Array<{ sku: string; quantity: number }>
+  successUrl: string
+  cancelUrl: string
+  metadata?: Array<{ key: string; value: string }>
+}
+
+export interface N1COCheckoutLinkResponse {
+  orderCode: string
+  orderId: number
+  paymentLinkUrl: string
+}
+
+export interface N1COOrderStatus {
+  orderId: number
+  orderCode: string
+  orderReference: string
+  orderStatus: 'PENDING' | 'PAID' | 'CANCELLED' | 'FINALIZED'
+  total: number
+}
 
 export interface N1COProduct {
   id: string
@@ -54,20 +83,6 @@ export interface N1COCollection {
   parentCode: string
 }
 
-export interface N1COPaymentSession {
-  id: string
-  sessionToken: string
-  redirectUrl: string
-  status: string
-}
-
-export interface N1COTransaction {
-  id: string
-  amount: number
-  currency: string
-  status: 'pending' | 'approved' | 'declined' | 'canceled'
-  metadata?: Record<string, string>
-}
 
 function isN1COConfigured(): boolean {
   return !!(CLIENT_ID && CLIENT_SECRET)
@@ -124,53 +139,54 @@ export async function syncProducts(
   return response.json()
 }
 
-export async function createPaymentSession(params: {
-  amount: number
-  currency: string
-  orderId: string
-  returnUrl: string
-  items: Array<{ name: string; quantity: number; price: number }>
-}): Promise<N1COPaymentSession> {
-  const token = await getAccessToken()
+export async function createCheckoutLink(
+  params: N1COCheckoutLinkParams,
+): Promise<N1COCheckoutLinkResponse> {
+  if (!PAY_SECRET) {
+    throw new Error('N1CO_PAY_SECRET not configured')
+  }
 
-  const response = await fetch(`${N1CO_BASE_URL}/payments/sessions`, {
+  const response = await fetch(`${N1CO_PAY_BASE_URL}/paymentlink/checkout`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      Authorization: `Bearer ${token}`,
+      Authorization: `Bearer ${PAY_SECRET}`,
     },
     body: JSON.stringify({
-      amount: params.amount,
-      currency: params.currency,
-      orderId: params.orderId,
-      returnUrl: params.returnUrl,
-      items: params.items,
-      metadata: { platform: 'cine-metro' },
+      orderName: params.orderName,
+      orderReference: params.orderReference,
+      lineItems: params.lineItems,
+      successUrl: params.successUrl,
+      cancelUrl: params.cancelUrl,
+      metadata: params.metadata,
     }),
   })
 
   if (!response.ok) {
-    throw new Error(`Failed to create payment session: ${response.statusText}`)
+    const body = await response.text()
+    throw new Error(`N1CO checkout link failed (${response.status}): ${body}`)
   }
 
-  return (await response.json()) as N1COPaymentSession
+  return (await response.json()) as N1COCheckoutLinkResponse
 }
 
-export async function getTransaction(
-  transactionId: string,
-): Promise<N1COTransaction> {
-  const token = await getAccessToken()
+export async function getCheckoutOrder(
+  orderCode: string,
+): Promise<N1COOrderStatus> {
+  if (!PAY_SECRET) {
+    throw new Error('N1CO_PAY_SECRET not configured')
+  }
 
   const response = await fetch(
-    `${N1CO_BASE_URL}/transactions/${transactionId}`,
+    `${N1CO_PAY_BASE_URL}/paymentlink/order/${orderCode}`,
     {
-      headers: { Authorization: `Bearer ${token}` },
+      headers: { Authorization: `Bearer ${PAY_SECRET}` },
     },
   )
 
   if (!response.ok) {
-    throw new Error(`Failed to fetch transaction: ${response.statusText}`)
+    throw new Error(`Failed to fetch N1CO order: ${response.statusText}`)
   }
 
-  return (await response.json()) as N1COTransaction
+  return (await response.json()) as N1COOrderStatus
 }
