@@ -6,6 +6,20 @@ import { syncProducts, type N1COProductSync } from "@/lib/n1co"
 import { uploadImage, deleteImage } from "@/lib/s3"
 import path from "path"
 
+export async function getEvents() {
+  return prisma.event.findMany({ orderBy: { createdAt: "desc" } })
+}
+
+export async function deleteEvent(id: string) {
+  const event = await prisma.event.findUnique({ where: { id } })
+  if (!event) return { error: "Event not found" }
+
+  await deleteImage(event.image)
+  await prisma.event.delete({ where: { id } })
+
+  return { success: true }
+}
+
 const eventFieldsSchema = z.object({
   sku: z.string().min(1),
   name: z.string().min(1),

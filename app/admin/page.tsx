@@ -1,110 +1,140 @@
 'use client'
 
-import React, { useState } from "react"
-import { useEffect } from 'react'
+import React, { useState, useEffect, useTransition } from "react"
 import { Plus, Trash2, Edit2, Loader, BarChart3, Package, Users } from 'lucide-react'
-import { type N1COProduct } from '@/lib/n1co'
+import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events"
 
-type AdminTab = 'dashboard' | 'products' | 'subscriptions'
+type AdminTab = 'dashboard' | 'events' | 'subscriptions'
+
+type Event = {
+  id: string
+  sku: string
+  name: string
+  description: string
+  longDescription: string
+  category: string
+  image: string
+  date: string
+  time: string
+  venue: string
+  city: string
+  priceInCents: number
+  availableTickets: number
+  featured: boolean
+}
+
+const EMPTY_FORM = {
+  sku: '',
+  name: '',
+  description: '',
+  longDescription: '',
+  category: 'cine',
+  date: '',
+  time: '',
+  venue: '',
+  city: '',
+  priceInCents: 0,
+  availableTickets: 0,
+  featured: false,
+  image: null as File | null,
+}
 
 export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState<AdminTab>('dashboard')
-  const [products, setProducts] = useState<N1COProduct[]>([])
+  const [events, setEvents] = useState<Event[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const [showForm, setShowForm] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState({
-    name: '',
-    description: '',
-    price: 0,
-    currency: 'MXN',
-    image: '',
-    category: 'cine' as const,
-  })
+  const [formData, setFormData] = useState(EMPTY_FORM)
+  const [isPending, startTransition] = useTransition()
 
-  // Fetch products
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        setLoading(true)
-        const response = await fetch('/api/admin/products')
-        if (!response.ok) throw new Error('Failed to fetch products')
-        const data = (await response.json()) as { products: N1COProduct[] }
-        setProducts(data.products)
-        setError(null)
-      } catch (err) {
-        const errorMsg = err instanceof Error ? err.message : 'Unknown error'
-        setError(errorMsg)
-      } finally {
-        setLoading(false)
-      }
-    }
-
-    fetchProducts()
+    getEvents()
+      .then(setEvents)
+      .catch(() => setError("Error al cargar eventos"))
+      .finally(() => setLoading(false))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    try {
-      const url = editingId ? `/api/admin/products/${editingId}` : '/api/admin/products'
-      const method = editingId ? 'PATCH' : 'POST'
+    setError(null)
 
-      const response = await fetch(url, {
-        method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(formData),
-      })
+    const fd = new FormData()
+    fd.set("sku", formData.sku)
+    fd.set("name", formData.name)
+    fd.set("description", formData.description)
+    fd.set("longDescription", formData.longDescription)
+    fd.set("category", formData.category)
+    fd.set("date", formData.date)
+    fd.set("time", formData.time)
+    fd.set("venue", formData.venue)
+    fd.set("city", formData.city)
+    fd.set("priceInCents", String(formData.priceInCents))
+    fd.set("availableTickets", String(formData.availableTickets))
+    fd.set("featured", String(formData.featured))
+    if (formData.image) {
+      fd.set("image", formData.image)
+    }
 
-      if (!response.ok) {
-        throw new Error('Failed to save product')
+    startTransition(async () => {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const result: any = editingId
+        ? await updateEvent(editingId, fd)
+        : await createEvent(fd)
+
+      if (result.error) {
+        const err = result.error
+        const messages = typeof err === 'string'
+          ? err
+          : Object.values(err as Record<string, string[]>).flat().join(', ')
+        setError(messages)
+        return
       }
 
-      const newProduct = (await response.json()) as N1COProduct
-
-      if (editingId) {
-        setProducts(products.map((p) => (p.id === editingId ? newProduct : p)))
-      } else {
-        setProducts([...products, newProduct])
-      }
-
-      setFormData({ name: '', description: '', price: 0, currency: 'MXN', image: '', category: 'cine' })
+      const refreshed = await getEvents()
+      setEvents(refreshed)
+      setFormData(EMPTY_FORM)
       setEditingId(null)
       setShowForm(false)
-    } catch (err) {
-      const errorMsg = err instanceof Error ? err.message : 'Error saving product'
-      setError(errorMsg)
-    }
-  }
-
-  const handleDelete = async (productId: string) => {
-    if (!confirm('¿Eliminar producto?')) return
-
-    try {
-      const response = await fetch(`/api/admin/products/${productId}`, {
-        method: 'DELETE',
-      })
-
-      if (!response.ok) throw new Error('Failed to delete product')
-
-      setProducts(products.filter((p) => p.id !== productId))
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error deleting product')
-    }
-  }
-
-  const handleEdit = (product: N1COProduct) => {
-    setFormData({
-      name: product.name,
-      description: product.description,
-      price: typeof product.price === 'number' ? product.price : parseFloat(String(product.price)) || 0,
-      currency: product.currency,
-      image: product.image || '',
-      category: (product.category as any) || 'cine',
     })
-    setEditingId(product.id)
+  }
+
+  const handleDelete = async (id: string) => {
+    if (!confirm('¿Eliminar este evento?')) return
+
+    startTransition(async () => {
+      const result = await deleteEvent(id)
+      if ('error' in result && result.error) {
+        setError(result.error)
+        return
+      }
+      setEvents(events.filter((ev) => ev.id !== id))
+    })
+  }
+
+  const handleEdit = (event: Event) => {
+    setFormData({
+      sku: event.sku,
+      name: event.name,
+      description: event.description,
+      longDescription: event.longDescription,
+      category: event.category,
+      date: event.date,
+      time: event.time,
+      venue: event.venue,
+      city: event.city,
+      priceInCents: event.priceInCents,
+      availableTickets: event.availableTickets,
+      featured: event.featured,
+      image: null,
+    })
+    setEditingId(event.id)
     setShowForm(true)
   }
+
+  const set = (field: string, value: string | number | boolean | File | null) =>
+    setFormData((prev) => ({ ...prev, [field]: value }))
 
   return (
     <div className="min-h-screen bg-background">
@@ -112,57 +142,36 @@ export default function AdminDashboard() {
       <nav className="sticky top-0 z-40 border-b border-border bg-white shadow-sm" style={{ backgroundColor: "#333333" }}>
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
           <div className="flex items-center gap-3">
-            <img 
-              src="/logo-nave.svg" 
-              alt="EntradasYA" 
-              className="h-10 w-auto"
-            />
+            <img src="/logo-nave.svg" alt="EntradasYA" className="h-10 w-auto" />
             <span className="text-xl font-bold text-white font-display hidden sm:inline">
               EntradasYA Admin
             </span>
           </div>
-          <div className="text-sm text-white/80">
-            Panel de administración
-          </div>
+          <div className="text-sm text-white/80">Panel de administración</div>
         </div>
       </nav>
 
       <div className="mx-auto flex max-w-7xl gap-6 px-4 py-8">
         {/* Sidebar */}
         <aside className="w-48 space-y-1">
-          <button
-            onClick={() => setActiveTab('dashboard')}
-            className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'dashboard'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-foreground hover:bg-secondary'
-            }`}
-          >
-            <BarChart3 className="h-5 w-5" />
-            Dashboard
-          </button>
-          <button
-            onClick={() => setActiveTab('products')}
-            className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'products'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-foreground hover:bg-secondary'
-            }`}
-          >
-            <Package className="h-5 w-5" />
-            Lista de Productos
-          </button>
-          <button
-            onClick={() => setActiveTab('subscriptions')}
-            className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
-              activeTab === 'subscriptions'
-                ? 'bg-primary text-white shadow-md'
-                : 'text-foreground hover:bg-secondary'
-            }`}
-          >
-            <Users className="h-5 w-5" />
-            Suscripciones
-          </button>
+          {([
+            { key: 'dashboard' as const, label: 'Dashboard', icon: BarChart3 },
+            { key: 'events' as const, label: 'Eventos', icon: Package },
+            { key: 'subscriptions' as const, label: 'Suscripciones', icon: Users },
+          ]).map(({ key, label, icon: Icon }) => (
+            <button
+              key={key}
+              onClick={() => setActiveTab(key)}
+              className={`flex w-full items-center gap-3 rounded-lg px-4 py-3 text-sm font-medium transition-all ${
+                activeTab === key
+                  ? 'bg-primary text-white shadow-md'
+                  : 'text-foreground hover:bg-secondary'
+              }`}
+            >
+              <Icon className="h-5 w-5" />
+              {label}
+            </button>
+          ))}
         </aside>
 
         {/* Main Content */}
@@ -182,8 +191,8 @@ export default function AdminDashboard() {
                       <Package className="h-6 w-6 text-primary" />
                     </div>
                     <div>
-                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Productos</p>
-                      <p className="text-2xl font-bold text-foreground">{products.length}</p>
+                      <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Eventos</p>
+                      <p className="text-2xl font-bold text-foreground">{events.length}</p>
                     </div>
                   </div>
                 </div>
@@ -215,25 +224,25 @@ export default function AdminDashboard() {
             </div>
           )}
 
-          {/* Products Tab */}
-          {activeTab === 'products' && (
+          {/* Events Tab */}
+          {activeTab === 'events' && (
             <div>
               <div className="mb-8 flex items-center justify-between">
                 <div>
-                  <h2 className="text-2xl font-bold text-foreground font-display">Lista de Productos</h2>
-                  <p className="text-muted-foreground">Gestiona todos tus productos</p>
+                  <h2 className="text-2xl font-bold text-foreground font-display">Eventos</h2>
+                  <p className="text-muted-foreground">Gestiona tus eventos (se sincronizan con N1CO)</p>
                 </div>
                 <button
                   type="button"
                   onClick={() => {
                     setEditingId(null)
-                    setFormData({ name: '', description: '', price: 0, currency: 'MXN', image: '', category: 'cine' })
+                    setFormData(EMPTY_FORM)
                     setShowForm(!showForm)
                   }}
                   className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
                 >
                   <Plus className="h-4 w-4" />
-                  Nuevo Producto
+                  Nuevo Evento
                 </button>
               </div>
 
@@ -249,15 +258,23 @@ export default function AdminDashboard() {
                   className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm"
                 >
                   <h3 className="mb-4 text-lg font-bold text-foreground font-display">
-                    {editingId ? 'Editar Producto' : 'Crear Producto'}
+                    {editingId ? 'Editar Evento' : 'Crear Evento'}
                   </h3>
 
                   <div className="grid gap-4 md:grid-cols-2">
                     <input
                       type="text"
+                      placeholder="SKU"
+                      value={formData.sku}
+                      onChange={(e) => set('sku', e.target.value)}
+                      className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
+                      required
+                    />
+                    <input
+                      type="text"
                       placeholder="Nombre"
                       value={formData.name}
-                      onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                      onChange={(e) => set('name', e.target.value)}
                       className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                       required
                     />
@@ -265,21 +282,21 @@ export default function AdminDashboard() {
                       type="text"
                       placeholder="Descripción"
                       value={formData.description}
-                      onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                      onChange={(e) => set('description', e.target.value)}
                       className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                       required
                     />
-                    <input
-                      type="text"
-                      placeholder="URL de imagen"
-                      value={formData.image}
-                      onChange={(e) => setFormData({ ...formData, image: e.target.value })}
-                      className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
+                    <textarea
+                      placeholder="Descripción larga"
+                      value={formData.longDescription}
+                      onChange={(e) => set('longDescription', e.target.value)}
+                      className="rounded-lg border border-border bg-input px-3 py-2 text-sm md:col-span-2"
+                      rows={3}
                       required
                     />
                     <select
                       value={formData.category}
-                      onChange={(e) => setFormData({ ...formData, category: e.target.value as any })}
+                      onChange={(e) => set('category', e.target.value)}
                       className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                       required
                     >
@@ -288,29 +305,92 @@ export default function AdminDashboard() {
                       <option value="concierto">Concierto</option>
                       <option value="popup">Pop Up</option>
                     </select>
+                    <div>
+                      <label className="mb-1 block text-xs text-muted-foreground">Imagen</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => set('image', e.target.files?.[0] ?? null)}
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
+                        required={!editingId}
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-muted-foreground">Fecha</label>
+                      <input
+                        type="date"
+                        value={formData.date}
+                        onChange={(e) => set('date', e.target.value)}
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-muted-foreground">Hora</label>
+                      <input
+                        type="time"
+                        value={formData.time}
+                        onChange={(e) => set('time', e.target.value)}
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
+                        required
+                      />
+                    </div>
                     <input
-                      type="number"
-                      placeholder="Precio"
-                      value={formData.price || 0}
-                      onChange={(e) => setFormData({ ...formData, price: parseFloat(e.target.value) || 0 })}
+                      type="text"
+                      placeholder="Venue"
+                      value={formData.venue}
+                      onChange={(e) => set('venue', e.target.value)}
                       className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                       required
                     />
-                    <select
-                      value={formData.currency}
-                      onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                    <input
+                      type="text"
+                      placeholder="Ciudad"
+                      value={formData.city}
+                      onChange={(e) => set('city', e.target.value)}
                       className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-                    >
-                      <option value="MXN">MXN (Pesos)</option>
-                      <option value="USD">USD (Dólares)</option>
-                    </select>
+                      required
+                    />
+                    <div>
+                      <label className="mb-1 block text-xs text-muted-foreground">Precio (centavos)</label>
+                      <input
+                        type="number"
+                        placeholder="Precio en centavos"
+                        value={formData.priceInCents || ''}
+                        onChange={(e) => set('priceInCents', parseInt(e.target.value) || 0)}
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="mb-1 block text-xs text-muted-foreground">Tickets disponibles</label>
+                      <input
+                        type="number"
+                        placeholder="Tickets"
+                        value={formData.availableTickets || ''}
+                        onChange={(e) => set('availableTickets', parseInt(e.target.value) || 0)}
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
+                        required
+                      />
+                    </div>
+                    <label className="flex items-center gap-2 text-sm md:col-span-2">
+                      <input
+                        type="checkbox"
+                        checked={formData.featured}
+                        onChange={(e) => set('featured', e.target.checked)}
+                        className="h-4 w-4 rounded border-border"
+                      />
+                      Evento destacado
+                    </label>
                   </div>
 
                   <div className="mt-4 flex gap-2">
                     <button
                       type="submit"
-                      className="rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
+                      disabled={isPending}
+                      className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg disabled:opacity-50"
                     >
+                      {isPending && <Loader className="h-4 w-4 animate-spin" />}
                       {editingId ? 'Actualizar' : 'Crear'}
                     </button>
                     <button
@@ -333,58 +413,48 @@ export default function AdminDashboard() {
                   <table className="w-full">
                     <thead className="bg-secondary/50">
                       <tr>
-                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
-                          Imagen
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
-                          Nombre
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
-                          Categoría
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
-                          Precio
-                        </th>
-                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
-                          Acciones
-                        </th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Imagen</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Nombre</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Categoría</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Fecha</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Precio</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Tickets</th>
+                        <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Acciones</th>
                       </tr>
                     </thead>
                     <tbody>
-                      {products.length === 0 ? (
+                      {events.length === 0 ? (
                         <tr>
-                          <td colSpan={5} className="px-6 py-8 text-center text-muted-foreground">
-                            No hay productos. Crea uno para empezar.
+                          <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                            No hay eventos. Crea uno para empezar.
                           </td>
                         </tr>
                       ) : (
-                        products.map((product) => (
-                          <tr key={product.id} className="border-t border-border hover:bg-secondary/30">
+                        events.map((event) => (
+                          <tr key={event.id} className="border-t border-border hover:bg-secondary/30">
                             <td className="px-6 py-4 text-sm">
-                              {product.image && (
-                                <img 
-                                  src={product.image || "/placeholder.svg"} 
-                                  alt={product.name}
-                                  className="h-10 w-10 rounded object-cover"
-                                />
-                              )}
+                              <img
+                                src={event.image}
+                                alt={event.name}
+                                className="h-10 w-10 rounded object-cover"
+                              />
                             </td>
-                            <td className="px-6 py-4 text-sm font-medium text-foreground">
-                              {product.name}
-                            </td>
+                            <td className="px-6 py-4 text-sm font-medium text-foreground">{event.name}</td>
                             <td className="px-6 py-4 text-sm">
                               <span className="inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize">
-                                {product.category || 'N/A'}
+                                {event.category}
                               </span>
                             </td>
+                            <td className="px-6 py-4 text-sm text-foreground">{event.date} {event.time}</td>
                             <td className="px-6 py-4 text-sm font-bold text-primary">
-                              {product.price} {product.currency}
+                              ${(event.priceInCents / 100).toFixed(2)}
                             </td>
+                            <td className="px-6 py-4 text-sm text-foreground">{event.availableTickets}</td>
                             <td className="px-6 py-4 text-sm">
                               <div className="flex gap-2">
                                 <button
                                   type="button"
-                                  onClick={() => handleEdit(product)}
+                                  onClick={() => handleEdit(event)}
                                   className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
                                 >
                                   <Edit2 className="h-3 w-3" />
@@ -392,7 +462,7 @@ export default function AdminDashboard() {
                                 </button>
                                 <button
                                   type="button"
-                                  onClick={() => handleDelete(product.id)}
+                                  onClick={() => handleDelete(event.id)}
                                   className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
                                 >
                                   <Trash2 className="h-3 w-3" />
