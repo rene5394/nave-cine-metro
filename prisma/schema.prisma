@@ -67,7 +67,7 @@ model Event {
 
 model Order {
   id              String      @id @default(uuid()) @db.Uuid
-  userId          String?
+  userId          String?     @db.Uuid
   user            User?       @relation(fields: [userId], references: [id])
   status          OrderStatus @default(PENDING)
   totalInCents    Int
@@ -85,9 +85,9 @@ model Order {
 
 model OrderItem {
   id           String @id @default(uuid()) @db.Uuid
-  orderId      String
+  orderId      String @db.Uuid
   order        Order  @relation(fields: [orderId], references: [id])
-  eventId      String
+  eventId      String @db.Uuid
   event        Event  @relation(fields: [eventId], references: [id])
   quantity     Int
   priceInCents Int
