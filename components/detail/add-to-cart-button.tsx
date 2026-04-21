@@ -3,7 +3,7 @@
 import { useState } from "react"
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
-import { formatPrice, type TicketEvent } from "@/lib/events"
+import { formatPrice, type TicketEvent } from "@/lib/events-shared"
 
 interface AddToCartButtonProps {
   event: TicketEvent

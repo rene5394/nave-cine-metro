@@ -2,7 +2,7 @@
 
 import React from "react"
 
-import { CATEGORY_LABELS, type EventCategory } from "@/lib/events"
+import { CATEGORY_LABELS, type EventCategory } from "@/lib/events-shared"
 import { Film, Theater, Music, Sparkles, LayoutGrid } from "lucide-react"
 
 const CATEGORY_ICONS: Record<string, React.ReactNode> = {

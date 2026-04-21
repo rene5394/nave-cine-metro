@@ -9,7 +9,7 @@ import {
   CATEGORY_COLORS,
   formatPrice,
   formatDate,
-} from "@/lib/events"
+} from "@/lib/events-shared"
 import { useEventModal } from "@/lib/event-modal-context"
 
 interface HeroSliderProps {

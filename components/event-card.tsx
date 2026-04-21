@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { Calendar } from "lucide-react"
-import { type TicketEvent, formatPrice, formatShortDate } from "@/lib/events"
+import { type TicketEvent, formatPrice, formatShortDate } from "@/lib/events-shared"
 import { useEventModal } from "@/lib/event-modal-context"
 
 interface EventCardProps {

@@ -14,7 +14,7 @@ import {
   Ticket,
 } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
-import { formatPrice, formatShortDate } from "@/lib/events"
+import { formatPrice, formatShortDate } from "@/lib/events-shared"
 import { startCheckout } from "@/app/actions/checkout"
 
 const ACCENT = "#9e5656"

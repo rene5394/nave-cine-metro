@@ -2,7 +2,7 @@
 
 import Image from "next/image"
 import { Calendar, Clock, Film, Star, MapPin } from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events"
+import { type TicketEvent, formatDate } from "@/lib/events-shared"
 import AddToCartButton from "./add-to-cart-button"
 
 interface CineDetailProps {

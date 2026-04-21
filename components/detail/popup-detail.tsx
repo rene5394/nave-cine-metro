@@ -9,7 +9,7 @@ import {
   Timer,
   MapPin,
 } from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events"
+import { type TicketEvent, formatDate } from "@/lib/events-shared"
 import AddToCartButton from "./add-to-cart-button"
 
 interface PopupDetailProps {

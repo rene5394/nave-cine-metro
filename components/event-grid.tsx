@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react"
 import { ChevronLeft, ChevronRight } from "lucide-react"
-import { type EventCategory, type TicketEvent } from "@/lib/events"
+import { type EventCategory, type TicketEvent } from "@/lib/events-shared"
 import EventCard from "./event-card"
 import EventFilters from "./event-filters"
 

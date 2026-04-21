@@ -3,7 +3,7 @@
 import Image from "next/image"
 import { Calendar, Clock, Minus, Plus, ShoppingCart } from "lucide-react"
 import { useState } from "react"
-import { type TicketEvent, formatDate } from "@/lib/events"
+import { type TicketEvent, formatDate } from "@/lib/events-shared"
 import { useCart } from "@/lib/cart-context"
 import { useEventModal } from "@/lib/event-modal-context"
 

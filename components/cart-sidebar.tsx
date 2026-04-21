@@ -5,7 +5,7 @@ import Image from "next/image"
 import { useRouter } from "next/navigation"
 import { X, Minus, Plus, ShoppingCart, Trash2, Ticket } from "lucide-react"
 import { useCart } from "@/lib/cart-context"
-import { formatPrice } from "@/lib/events"
+import { formatPrice } from "@/lib/events-shared"
 
 const ACCENT = "#9e5656"
 
