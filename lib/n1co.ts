@@ -5,8 +5,8 @@ const N1CO_BASE_URL =
 
 const N1CO_PAY_BASE_URL =
   process.env.N1CO_ENV === 'live'
-    ? 'https://api-pay.n1co.shop/api'
-    : 'https://api-pay-sandbox.n1co.shop/api'
+    ? 'https://api-pay.n1co.shop/api/v3'
+    : 'https://api-pay-sandbox.n1co.shop/api/v3'
 
 const CLIENT_ID = process.env.N1CO_CLIENT_ID
 const CLIENT_SECRET = process.env.N1CO_CLIENT_SECRET
@@ -55,8 +55,8 @@ export interface N1COProductSync {
   price: number
   collections: string[]
   image: string
-  enabled: boolean
-  salesChannels: string[]
+  enable: boolean
+  salesChannel: string[]
   locations: Array<{
     locationCode: string
     isAvailable: boolean
@@ -80,9 +80,8 @@ export interface N1COCollection {
   name: string
   description: string
   image: string
-  parentCode: string
+  parentCode?: string
 }
-
 
 function isN1COConfigured(): boolean {
   return !!(CLIENT_ID && CLIENT_SECRET)
@@ -93,15 +92,14 @@ async function getAccessToken(): Promise<string> {
     throw new Error('N1CO credentials not configured')
   }
 
-  const response = await fetch(`${N1CO_BASE_URL}/oauth/token`, {
+  const response = await fetch(`${N1CO_BASE_URL}/Token`, {
     method: 'POST',
     headers: {
-      'Content-Type': 'application/x-www-form-urlencoded',
+      'Content-Type': 'application/json',
     },
-    body: new URLSearchParams({
-      grant_type: 'client_credentials',
-      client_id: CLIENT_ID!,
-      client_secret: CLIENT_SECRET!,
+    body: JSON.stringify({
+      clientId: CLIENT_ID!,
+      clientSecret: CLIENT_SECRET!,
     }),
   })
 
@@ -109,8 +107,8 @@ async function getAccessToken(): Promise<string> {
     throw new Error(`N1CO auth failed: ${response.statusText}`)
   }
 
-  const data = (await response.json()) as { access_token: string }
-  return data.access_token
+  const data = (await response.json()) as { accessToken: string }
+  return data.accessToken
 }
 
 /**
