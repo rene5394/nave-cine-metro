@@ -41,6 +41,7 @@ model User {
 
 model Event {
   id               String        @id @default(uuid()) @db.Uuid
+  n1coProductId    String?       @unique
   sku              String        @unique
   name             String
   description      String
