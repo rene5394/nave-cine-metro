@@ -137,6 +137,39 @@ export async function syncProducts(
   return response.json()
 }
 
+/**
+ * Fetch the latest product created in N1CO by sorting by Id descending.
+ */
+export async function getLatestProduct(): Promise<{
+  productId: number
+  name: string
+  sku: string | null
+} | null> {
+  const token = await getAccessToken()
+
+  const params = new URLSearchParams({
+    Sorts: '-productId',
+    PageSize: '1',
+    Page: '1',
+  })
+
+  const response = await fetch(`${N1CO_BASE_URL}/Products?${params}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`N1CO get products failed (${response.status}): ${body}`)
+  }
+
+  const data = (await response.json()) as {
+    products: Array<{ productId: number; name: string; sku: string | null }>
+    totalCount: number
+  }
+
+  return data.products[0] ?? null
+}
+
 export async function createCheckoutLink(
   params: N1COCheckoutLinkParams,
 ): Promise<N1COCheckoutLinkResponse> {

@@ -2,7 +2,7 @@
 
 import { z } from "zod"
 import { prisma } from "@/lib/prisma"
-import { syncProducts, type N1COProductSync } from "@/lib/n1co"
+import { syncProducts, getLatestProduct, type N1COProductSync } from "@/lib/n1co"
 import { uploadImage, deleteImage } from "@/lib/s3"
 import path from "path"
 
@@ -33,10 +33,12 @@ const eventFieldsSchema = z.object({
   priceInCents: z.coerce.number().int().positive(),
   availableTickets: z.coerce.number().int().nonnegative(),
   featured: z.coerce.boolean().default(false),
+  syncN1co: z.coerce.boolean().default(false),
+  n1coProductId: z.string().optional().default(""),
 })
 
 function toN1COProduct(
-  event: z.infer<typeof eventFieldsSchema> & { image: string },
+  event: Omit<z.infer<typeof eventFieldsSchema>, "syncN1co" | "n1coProductId"> & { image: string },
 ): N1COProductSync {
   return {
     sku: event.sku,
@@ -76,12 +78,27 @@ export async function createEvent(formData: FormData) {
   }
 
   const imageUrl = await uploadEventImage(imageFile, parsed.data.sku)
-  const eventData = { ...parsed.data, image: imageUrl }
+  const { syncN1co, n1coProductId, ...eventFields } = parsed.data
+  const eventData = {
+    ...eventFields,
+    image: imageUrl,
+    n1coProductId: syncN1co && n1coProductId ? n1coProductId : null,
+  }
 
   const event = await prisma.event.create({ data: eventData })
 
   try {
-    await syncProducts([toN1COProduct(eventData)])
+    await syncProducts([toN1COProduct({ ...eventFields, image: imageUrl })])
+
+    if (!event.n1coProductId) {
+      const latest = await getLatestProduct()
+      if (latest) {
+        await prisma.event.update({
+          where: { id: event.id },
+          data: { n1coProductId: String(latest.productId) },
+        })
+      }
+    }
   } catch (error) {
     console.warn(
       "N1CO sync failed on create:",
@@ -111,11 +128,16 @@ export async function updateEvent(id: string, formData: FormData) {
     imageUrl = existing.image
   }
 
-  const eventData = { ...parsed.data, image: imageUrl }
+  const { syncN1co, n1coProductId, ...eventFields } = parsed.data
+  const eventData = {
+    ...eventFields,
+    image: imageUrl,
+    n1coProductId: syncN1co && n1coProductId ? n1coProductId : null,
+  }
   const event = await prisma.event.update({ where: { id }, data: eventData })
 
   try {
-    await syncProducts([toN1COProduct(eventData)])
+    await syncProducts([toN1COProduct({ ...eventFields, image: imageUrl })])
   } catch (error) {
     console.warn(
       "N1CO sync failed on update:",

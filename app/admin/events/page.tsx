@@ -1,8 +1,20 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from "react"
+import React, { useState, useEffect, useTransition } from 'react'
 import { Plus, Trash2, Edit2, Loader } from 'lucide-react'
-import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events"
+import {
+  createEvent,
+  updateEvent,
+  getEvents,
+  deleteEvent,
+} from '@/app/actions/events'
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+} from '@/components/ui/dialog'
 
 type Event = {
   id: string
@@ -19,6 +31,7 @@ type Event = {
   priceInCents: number
   availableTickets: number
   featured: boolean
+  n1coProductId: string | null
 }
 
 const EMPTY_FORM = {
@@ -35,6 +48,8 @@ const EMPTY_FORM = {
   availableTickets: 0,
   featured: false,
   image: null as File | null,
+  syncN1co: false,
+  n1coProductId: '',
 }
 
 export default function EventsPage() {
@@ -49,7 +64,7 @@ export default function EventsPage() {
   useEffect(() => {
     getEvents()
       .then(setEvents)
-      .catch(() => setError("Error al cargar eventos"))
+      .catch(() => setError('Error al cargar eventos'))
       .finally(() => setLoading(false))
   }, [])
 
@@ -58,20 +73,22 @@ export default function EventsPage() {
     setError(null)
 
     const fd = new FormData()
-    fd.set("sku", formData.sku)
-    fd.set("name", formData.name)
-    fd.set("description", formData.description)
-    fd.set("longDescription", formData.longDescription)
-    fd.set("category", formData.category)
-    fd.set("date", formData.date)
-    fd.set("time", formData.time)
-    fd.set("venue", formData.venue)
-    fd.set("city", formData.city)
-    fd.set("priceInCents", String(formData.priceInCents))
-    fd.set("availableTickets", String(formData.availableTickets))
-    fd.set("featured", String(formData.featured))
+    fd.set('sku', formData.sku)
+    fd.set('name', formData.name)
+    fd.set('description', formData.description)
+    fd.set('longDescription', formData.longDescription)
+    fd.set('category', formData.category)
+    fd.set('date', formData.date)
+    fd.set('time', formData.time)
+    fd.set('venue', formData.venue)
+    fd.set('city', formData.city)
+    fd.set('priceInCents', String(formData.priceInCents))
+    fd.set('availableTickets', String(formData.availableTickets))
+    fd.set('featured', String(formData.featured))
+    fd.set('syncN1co', String(formData.syncN1co))
+    fd.set('n1coProductId', formData.n1coProductId)
     if (formData.image) {
-      fd.set("image", formData.image)
+      fd.set('image', formData.image)
     }
 
     startTransition(async () => {
@@ -82,9 +99,12 @@ export default function EventsPage() {
 
       if (result.error) {
         const err = result.error
-        const messages = typeof err === 'string'
-          ? err
-          : Object.values(err as Record<string, string[]>).flat().join(', ')
+        const messages =
+          typeof err === 'string'
+            ? err
+            : Object.values(err as Record<string, string[]>)
+                .flat()
+                .join(', ')
         setError(messages)
         return
       }
@@ -125,6 +145,8 @@ export default function EventsPage() {
       availableTickets: event.availableTickets,
       featured: event.featured,
       image: null,
+      syncN1co: !!event.n1coProductId,
+      n1coProductId: event.n1coProductId ?? '',
     })
     setEditingId(event.id)
     setShowForm(true)
@@ -135,245 +157,365 @@ export default function EventsPage() {
 
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className='mb-8 flex items-center justify-between'>
         <div>
-          <h2 className="text-2xl font-bold text-foreground font-display">Eventos</h2>
-          <p className="text-muted-foreground">Gestiona tus eventos (se sincronizan con N1CO)</p>
+          <h2 className='text-2xl font-bold text-foreground font-display'>
+            Eventos
+          </h2>
+          <p className='text-muted-foreground'>
+            Gestiona tus eventos (se sincronizan con N1CO)
+          </p>
         </div>
         <button
-          type="button"
+          type='button'
           onClick={() => {
             setEditingId(null)
             setFormData(EMPTY_FORM)
             setShowForm(!showForm)
           }}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
+          className='flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg'
         >
-          <Plus className="h-4 w-4" />
+          <Plus className='h-4 w-4' />
           Nuevo Evento
         </button>
       </div>
 
       {error && (
-        <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
+        <div className='mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive'>
           {error}
         </div>
       )}
 
-      {showForm && (
-        <form
-          onSubmit={handleSubmit}
-          className="mb-8 rounded-lg border border-border bg-card p-6 shadow-sm"
-        >
-          <h3 className="mb-4 text-lg font-bold text-foreground font-display">
-            {editingId ? 'Editar Evento' : 'Crear Evento'}
-          </h3>
+      <Dialog
+        open={showForm}
+        onOpenChange={(open) => {
+          if (!open) {
+            setShowForm(false)
+            setEditingId(null)
+            setFormData(EMPTY_FORM)
+          }
+        }}
+      >
+        <DialogContent className='max-w-2xl max-h-[85vh] overflow-y-auto'>
+          <DialogHeader>
+            <DialogTitle className='font-display'>
+              {editingId ? 'Editar Evento' : 'Crear Evento'}
+            </DialogTitle>
+            <DialogDescription>
+              {editingId
+                ? 'Modifica los datos del evento.'
+                : 'Completa los datos para crear un nuevo evento.'}
+            </DialogDescription>
+          </DialogHeader>
 
-          <div className="grid gap-4 md:grid-cols-2">
-            <input
-              type="text"
-              placeholder="SKU"
-              value={formData.sku}
-              onChange={(e) => set('sku', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Nombre"
-              value={formData.name}
-              onChange={(e) => set('name', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Descripción"
-              value={formData.description}
-              onChange={(e) => set('description', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            />
-            <textarea
-              placeholder="Descripción larga"
-              value={formData.longDescription}
-              onChange={(e) => set('longDescription', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm md:col-span-2"
-              rows={3}
-              required
-            />
-            <select
-              value={formData.category}
-              onChange={(e) => set('category', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            >
-              <option value="cine">Cine</option>
-              <option value="teatro">Teatro</option>
-              <option value="concierto">Concierto</option>
-              <option value="popup">Pop Up</option>
-            </select>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Imagen</label>
-              <input
-                type="file"
-                accept="image/*"
-                onChange={(e) => set('image', e.target.files?.[0] ?? null)}
-                className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
-                required={!editingId}
-              />
+          <form onSubmit={handleSubmit}>
+            <div className='grid gap-4 md:grid-cols-2'>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  SKU
+                </label>
+                <input
+                  type='text'
+                  placeholder='SKU'
+                  value={formData.sku}
+                  onChange={(e) => set('sku', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Nombre
+                </label>
+                <input
+                  type='text'
+                  placeholder='Nombre'
+                  value={formData.name}
+                  onChange={(e) => set('name', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Descripción
+                </label>
+                <input
+                  type='text'
+                  placeholder='Descripción'
+                  value={formData.description}
+                  onChange={(e) => set('description', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div className='md:col-span-2'>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Descripción larga
+                </label>
+                <textarea
+                  placeholder='Descripción larga'
+                  value={formData.longDescription}
+                  onChange={(e) => set('longDescription', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  rows={3}
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Categoría
+                </label>
+                <select
+                  value={formData.category}
+                  onChange={(e) => set('category', e.target.value)}
+                  className='h-10 rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                >
+                  <option value='cine'>Cine</option>
+                  <option value='teatro'>Teatro</option>
+                  <option value='concierto'>Concierto</option>
+                  <option value='popup'>Pop Up</option>
+                </select>
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Imagen
+                </label>
+                <input
+                  type='file'
+                  accept='image/*'
+                  onChange={(e) => set('image', e.target.files?.[0] ?? null)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required={!editingId}
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Fecha
+                </label>
+                <input
+                  type='date'
+                  value={formData.date}
+                  onChange={(e) => set('date', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Hora
+                </label>
+                <input
+                  type='time'
+                  value={formData.time}
+                  onChange={(e) => set('time', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Venue
+                </label>
+                <input
+                  type='text'
+                  placeholder='Venue'
+                  value={formData.venue}
+                  onChange={(e) => set('venue', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Ciudad
+                </label>
+                <input
+                  type='text'
+                  placeholder='Ciudad'
+                  value={formData.city}
+                  onChange={(e) => set('city', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Precio (centavos)
+                </label>
+                <input
+                  type='number'
+                  placeholder='Precio en centavos'
+                  value={formData.priceInCents || ''}
+                  onChange={(e) =>
+                    set('priceInCents', parseInt(e.target.value) || 0)
+                  }
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <div>
+                <label className='mb-1 block text-xs text-muted-foreground'>
+                  Tickets disponibles
+                </label>
+                <input
+                  type='number'
+                  placeholder='Tickets'
+                  value={formData.availableTickets || ''}
+                  onChange={(e) =>
+                    set('availableTickets', parseInt(e.target.value) || 0)
+                  }
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  required
+                />
+              </div>
+              <label className='flex items-center gap-2 text-sm'>
+                <input
+                  type='checkbox'
+                  checked={formData.featured}
+                  onChange={(e) => set('featured', e.target.checked)}
+                  className='h-4 w-4 rounded border-border'
+                />
+                Evento destacado
+              </label>
+              <label className='flex items-center gap-2 text-sm'>
+                <input
+                  type='checkbox'
+                  checked={formData.syncN1co}
+                  onChange={(e) => {
+                    set('syncN1co', e.target.checked)
+                    if (!e.target.checked) set('n1coProductId', '')
+                  }}
+                  className='h-4 w-4 rounded border-border'
+                />
+                Ya existe en N1co
+              </label>
+              {formData.syncN1co && (
+                <input
+                  type='text'
+                  placeholder='N1co product id'
+                  value={formData.n1coProductId}
+                  onChange={(e) => set('n1coProductId', e.target.value)}
+                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm md:col-span-2'
+                  required
+                />
+              )}
             </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Fecha</label>
-              <input
-                type="date"
-                value={formData.date}
-                onChange={(e) => set('date', e.target.value)}
-                className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Hora</label>
-              <input
-                type="time"
-                value={formData.time}
-                onChange={(e) => set('time', e.target.value)}
-                className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
-                required
-              />
-            </div>
-            <input
-              type="text"
-              placeholder="Venue"
-              value={formData.venue}
-              onChange={(e) => set('venue', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            />
-            <input
-              type="text"
-              placeholder="Ciudad"
-              value={formData.city}
-              onChange={(e) => set('city', e.target.value)}
-              className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
-              required
-            />
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Precio (centavos)</label>
-              <input
-                type="number"
-                placeholder="Precio en centavos"
-                value={formData.priceInCents || ''}
-                onChange={(e) => set('priceInCents', parseInt(e.target.value) || 0)}
-                className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
-                required
-              />
-            </div>
-            <div>
-              <label className="mb-1 block text-xs text-muted-foreground">Tickets disponibles</label>
-              <input
-                type="number"
-                placeholder="Tickets"
-                value={formData.availableTickets || ''}
-                onChange={(e) => set('availableTickets', parseInt(e.target.value) || 0)}
-                className="rounded-lg border border-border bg-input px-3 py-2 text-sm w-full"
-                required
-              />
-            </div>
-            <label className="flex items-center gap-2 text-sm md:col-span-2">
-              <input
-                type="checkbox"
-                checked={formData.featured}
-                onChange={(e) => set('featured', e.target.checked)}
-                className="h-4 w-4 rounded border-border"
-              />
-              Evento destacado
-            </label>
-          </div>
 
-          <div className="mt-4 flex gap-2">
-            <button
-              type="submit"
-              disabled={isPending}
-              className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg disabled:opacity-50"
-            >
-              {isPending && <Loader className="h-4 w-4 animate-spin" />}
-              {editingId ? 'Actualizar' : 'Crear'}
-            </button>
-            <button
-              type="button"
-              onClick={() => setShowForm(false)}
-              className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary"
-            >
-              Cancelar
-            </button>
-          </div>
-        </form>
-      )}
+            <div className='mt-4 flex gap-2'>
+              <button
+                type='submit'
+                disabled={isPending}
+                className='flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg disabled:opacity-50'
+              >
+                {isPending && <Loader className='h-4 w-4 animate-spin' />}
+                {editingId ? 'Actualizar' : 'Crear'}
+              </button>
+              <button
+                type='button'
+                onClick={() => {
+                  setShowForm(false)
+                  setEditingId(null)
+                  setFormData(EMPTY_FORM)
+                }}
+                className='rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary'
+              >
+                Cancelar
+              </button>
+            </div>
+          </form>
+        </DialogContent>
+      </Dialog>
 
       {loading ? (
-        <div className="flex items-center justify-center py-12">
-          <Loader className="h-6 w-6 animate-spin text-primary" />
+        <div className='flex items-center justify-center py-12'>
+          <Loader className='h-6 w-6 animate-spin text-primary' />
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
-          <table className="w-full">
-            <thead className="bg-secondary/50">
+        <div className='overflow-x-auto rounded-lg border border-border shadow-sm'>
+          <table className='w-full'>
+            <thead className='bg-secondary/50'>
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Imagen</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Nombre</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Categoría</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Fecha</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Precio</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Tickets</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Acciones</th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Imagen
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Nombre
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Categoría
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Fecha
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Precio
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Tickets
+                </th>
+                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
+                  Acciones
+                </th>
               </tr>
             </thead>
             <tbody>
               {events.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
+                  <td
+                    colSpan={7}
+                    className='px-6 py-8 text-center text-muted-foreground'
+                  >
                     No hay eventos. Crea uno para empezar.
                   </td>
                 </tr>
               ) : (
                 events.map((event) => (
-                  <tr key={event.id} className="border-t border-border hover:bg-secondary/30">
-                    <td className="px-6 py-4 text-sm">
+                  <tr
+                    key={event.id}
+                    className='border-t border-border hover:bg-secondary/30'
+                  >
+                    <td className='px-6 py-4 text-sm'>
                       <img
                         src={event.image}
                         alt={event.name}
-                        className="h-10 w-10 rounded object-cover"
+                        className='h-10 w-10 rounded object-cover'
                       />
                     </td>
-                    <td className="px-6 py-4 text-sm font-medium text-foreground">{event.name}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <span className="inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize">
+                    <td className='px-6 py-4 text-sm font-medium text-foreground'>
+                      {event.name}
+                    </td>
+                    <td className='px-6 py-4 text-sm'>
+                      <span className='inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize'>
                         {event.category}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-sm text-foreground">{event.date} {event.time}</td>
-                    <td className="px-6 py-4 text-sm font-bold text-primary">
+                    <td className='px-6 py-4 text-sm text-foreground'>
+                      {event.date} {event.time}
+                    </td>
+                    <td className='px-6 py-4 text-sm font-bold text-primary'>
                       ${(event.priceInCents / 100).toFixed(2)}
                     </td>
-                    <td className="px-6 py-4 text-sm text-foreground">{event.availableTickets}</td>
-                    <td className="px-6 py-4 text-sm">
-                      <div className="flex gap-2">
+                    <td className='px-6 py-4 text-sm text-foreground'>
+                      {event.availableTickets}
+                    </td>
+                    <td className='px-6 py-4 text-sm'>
+                      <div className='flex gap-2'>
                         <button
-                          type="button"
+                          type='button'
                           onClick={() => handleEdit(event)}
-                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                          className='flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10'
                         >
-                          <Edit2 className="h-3 w-3" />
+                          <Edit2 className='h-3 w-3' />
                           Editar
                         </button>
                         <button
-                          type="button"
+                          type='button'
                           onClick={() => handleDelete(event.id)}
-                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
+                          className='flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10'
                         >
-                          <Trash2 className="h-3 w-3" />
+                          <Trash2 className='h-3 w-3' />
                           Eliminar
                         </button>
                       </div>
