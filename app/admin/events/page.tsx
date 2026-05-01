@@ -1,7 +1,7 @@
 'use client'
 
 import React, { useCallback, useState, useEffect, useRef, useTransition } from 'react'
-import { Plus, Trash2, Edit2, Loader } from 'lucide-react'
+import { Plus, Trash2, Edit2, Loader, Star, Search } from 'lucide-react'
 import {
   createEvent,
   updateEvent,
@@ -73,7 +73,20 @@ export default function EventsPage() {
   const [isPending, startTransition] = useTransition()
   const [page, setPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
+  const [nameFilter, setNameFilter] = useState('')
+  const [debouncedName, setDebouncedName] = useState('')
+  const [categoryFilter, setCategoryFilter] = useState<string>('')
+  const [featuredOnly, setFeaturedOnly] = useState(false)
   const dialogContentRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    const t = setTimeout(() => setDebouncedName(nameFilter), 300)
+    return () => clearTimeout(t)
+  }, [nameFilter])
+
+  useEffect(() => {
+    setPage(1)
+  }, [debouncedName, categoryFilter, featuredOnly])
 
   useEffect(() => {
     if (error && dialogContentRef.current) {
@@ -85,7 +98,19 @@ export default function EventsPage() {
     async (targetPage = page) => {
       setLoading(true)
       try {
-        const result = await getEvents({ page: targetPage, pageSize: PAGE_SIZE })
+        const result = await getEvents({
+          page: targetPage,
+          pageSize: PAGE_SIZE,
+          name: debouncedName || undefined,
+          category:
+            (categoryFilter as
+              | 'cine'
+              | 'teatro'
+              | 'concierto'
+              | 'popup'
+              | '') || undefined,
+          featured: featuredOnly || undefined,
+        })
         setEvents(result.events)
         setTotalPages(result.totalPages)
         if (result.page !== targetPage) {
@@ -97,13 +122,13 @@ export default function EventsPage() {
         setLoading(false)
       }
     },
-    [page],
+    [page, debouncedName, categoryFilter, featuredOnly],
   )
 
   useEffect(() => {
     refresh(page)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page])
+  }, [page, debouncedName, categoryFilter, featuredOnly])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -233,6 +258,39 @@ export default function EventsPage() {
           {error}
         </div>
       )}
+
+      <div className='mb-4 flex flex-col gap-3 md:flex-row md:items-center'>
+        <div className='relative flex-1'>
+          <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+          <input
+            type='text'
+            placeholder='Buscar por nombre…'
+            value={nameFilter}
+            onChange={(e) => setNameFilter(e.target.value)}
+            className='w-full rounded-lg border border-border bg-input pl-9 pr-3 py-2 text-sm'
+          />
+        </div>
+        <select
+          value={categoryFilter}
+          onChange={(e) => setCategoryFilter(e.target.value)}
+          className='h-10 rounded-lg border border-border bg-input px-3 text-sm md:w-48'
+        >
+          <option value=''>Todas las categorías</option>
+          <option value='cine'>Cine</option>
+          <option value='teatro'>Teatro</option>
+          <option value='concierto'>Concierto</option>
+          <option value='popup'>Pop Up</option>
+        </select>
+        <label className='flex items-center gap-2 text-sm text-foreground'>
+          <input
+            type='checkbox'
+            checked={featuredOnly}
+            onChange={(e) => setFeaturedOnly(e.target.checked)}
+            className='h-4 w-4 rounded border-border'
+          />
+          Solo destacados
+        </label>
+      </div>
 
       <Dialog
         open={showForm}
@@ -547,7 +605,15 @@ export default function EventsPage() {
                       />
                     </td>
                     <td className='px-6 py-4 text-sm font-medium text-foreground'>
-                      {event.name}
+                      <span className='inline-flex items-center gap-1.5'>
+                        {event.featured && (
+                          <Star
+                            className='h-4 w-4 fill-amber-400 text-amber-400'
+                            aria-label='Evento destacado'
+                          />
+                        )}
+                        {event.name}
+                      </span>
                     </td>
                     <td className='px-6 py-4 text-sm'>
                       <span className='inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize'>

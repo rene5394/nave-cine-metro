@@ -11,21 +11,41 @@ import {
 import { uploadImage, deleteImage } from '@/lib/s3'
 import path from 'path'
 
+type EventCategory = 'cine' | 'teatro' | 'concierto' | 'popup'
+
 export async function getEvents({
   page = 1,
   pageSize = 10,
-}: { page?: number; pageSize?: number } = {}) {
+  name,
+  category,
+  featured,
+}: {
+  page?: number
+  pageSize?: number
+  name?: string
+  category?: EventCategory
+  featured?: boolean
+} = {}) {
   const safePage = Math.max(1, Math.floor(page))
   const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)))
   const skip = (safePage - 1) * safePageSize
 
+  const where = {
+    ...(name && name.trim()
+      ? { name: { contains: name.trim(), mode: 'insensitive' as const } }
+      : {}),
+    ...(category ? { category } : {}),
+    ...(featured ? { featured: true } : {}),
+  }
+
   const [events, totalCount] = await prisma.$transaction([
     prisma.event.findMany({
+      where,
       orderBy: { createdAt: 'desc' },
       skip,
       take: safePageSize,
     }),
-    prisma.event.count(),
+    prisma.event.count({ where }),
   ])
 
   return {
