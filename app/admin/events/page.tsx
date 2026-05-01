@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useTransition } from 'react'
+import React, { useState, useEffect, useRef, useTransition } from 'react'
 import { Plus, Trash2, Edit2, Loader } from 'lucide-react'
 import {
   createEvent,
@@ -60,6 +60,13 @@ export default function EventsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [isPending, startTransition] = useTransition()
+  const dialogContentRef = useRef<HTMLDivElement | null>(null)
+
+  useEffect(() => {
+    if (error && dialogContentRef.current) {
+      dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+    }
+  }, [error])
 
   useEffect(() => {
     getEvents()
@@ -149,6 +156,7 @@ export default function EventsPage() {
       n1coProductId: event.n1coProductId ?? '',
     })
     setEditingId(event.id)
+    setError(null)
     setShowForm(true)
   }
 
@@ -171,6 +179,7 @@ export default function EventsPage() {
           onClick={() => {
             setEditingId(null)
             setFormData(EMPTY_FORM)
+            setError(null)
             setShowForm(!showForm)
           }}
           className='flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg'
@@ -180,7 +189,7 @@ export default function EventsPage() {
         </button>
       </div>
 
-      {error && (
+      {error && !showForm && (
         <div className='mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive'>
           {error}
         </div>
@@ -193,10 +202,14 @@ export default function EventsPage() {
             setShowForm(false)
             setEditingId(null)
             setFormData(EMPTY_FORM)
+            setError(null)
           }
         }}
       >
-        <DialogContent className='max-w-2xl max-h-[85vh] overflow-y-auto'>
+        <DialogContent
+          ref={dialogContentRef}
+          className='max-w-2xl max-h-[85vh] overflow-y-auto'
+        >
           <DialogHeader>
             <DialogTitle className='font-display'>
               {editingId ? 'Editar Evento' : 'Crear Evento'}
@@ -207,6 +220,12 @@ export default function EventsPage() {
                 : 'Completa los datos para crear un nuevo evento.'}
             </DialogDescription>
           </DialogHeader>
+
+          {error && (
+            <div className='mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive'>
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit}>
             <div className='grid gap-4 md:grid-cols-2'>
@@ -220,7 +239,8 @@ export default function EventsPage() {
                   value={formData.sku}
                   onChange={(e) => set('sku', e.target.value)}
                   className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
-                  required
+                  disabled={!!editingId}
+                  required={!editingId}
                 />
               </div>
               <div>
@@ -288,6 +308,7 @@ export default function EventsPage() {
                   onChange={(e) => set('image', e.target.files?.[0] ?? null)}
                   className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
                   required={!editingId}
+                  disabled={!!editingId}
                 />
               </div>
               <div>
@@ -383,6 +404,7 @@ export default function EventsPage() {
                 <input
                   type='checkbox'
                   checked={formData.syncN1co}
+                  disabled={!!editingId}
                   onChange={(e) => {
                     set('syncN1co', e.target.checked)
                     if (!e.target.checked) set('n1coProductId', '')
@@ -399,6 +421,7 @@ export default function EventsPage() {
                   onChange={(e) => set('n1coProductId', e.target.value)}
                   className='rounded-lg border border-border bg-input px-3 py-2 text-sm md:col-span-2'
                   required
+                  disabled={!!editingId}
                 />
               )}
             </div>
@@ -418,6 +441,7 @@ export default function EventsPage() {
                   setShowForm(false)
                   setEditingId(null)
                   setFormData(EMPTY_FORM)
+                  setError(null)
                 }}
                 className='rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary'
               >

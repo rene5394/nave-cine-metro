@@ -4,7 +4,7 @@ import { PrismaPg } from '@prisma/adapter-pg'
 import bcrypt from 'bcryptjs'
 import fs from 'fs'
 import path from 'path'
-import { syncProducts, type N1COProductSync } from '../lib/n1co'
+import { createProducts, type N1COProductSync } from '../lib/n1co'
 import { uploadImage, isS3Configured } from '../lib/s3'
 
 const prisma = new PrismaClient({
@@ -545,7 +545,7 @@ async function main() {
     )
     console.log(`Authenticating...`)
 
-    const result = await syncProducts(n1coProducts, collections)
+    const result = await createProducts(n1coProducts, collections)
     console.log(`Synced ${n1coProducts.length} products to N1CO`)
     console.log(`Response:`, JSON.stringify(result, null, 2))
   } catch (error) {

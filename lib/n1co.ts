@@ -47,14 +47,14 @@ export interface N1COProduct {
 }
 
 export interface N1COProductSync {
+  productId?: string
   sku: string
   name: string
   description: string
-  extraDescription: string
   stock: number
   price: number
   collections: string[]
-  image: string
+  image?: string
   enable: boolean
   salesChannel: string[]
   locations: Array<{
@@ -114,7 +114,7 @@ async function getAccessToken(): Promise<string> {
 /**
  * Sync products to N1CO. Creates new products or updates existing ones by SKU.
  */
-export async function syncProducts(
+export async function createProducts(
   products: N1COProductSync[],
   collections: N1COCollection[] = [],
 ) {
@@ -135,6 +135,34 @@ export async function syncProducts(
   }
 
   return response.json()
+}
+
+/**
+ * Update an existing N1CO product by productId.
+ */
+export async function updateProducts(
+  products: N1COProductSync[],
+  collections: N1COCollection[] = [],
+) {
+  const token = await getAccessToken()
+
+  const productsFormatted = products.map(({ image, ...rest }) => rest)
+
+  const response = await fetch(`${N1CO_BASE_URL}/Products/Sync`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${token}`,
+    },
+    body: JSON.stringify({ products: productsFormatted, collections }),
+  })
+
+  if (!response.ok) {
+    const body = await response.text()
+    throw new Error(`N1CO product update failed (${response.status}): ${body}`)
+  }
+
+  return response.json().catch(() => null)
 }
 
 /**
