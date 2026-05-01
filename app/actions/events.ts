@@ -11,8 +11,34 @@ import {
 import { uploadImage, deleteImage } from '@/lib/s3'
 import path from 'path'
 
-export async function getEvents() {
-  return prisma.event.findMany({ orderBy: { createdAt: 'desc' } })
+export async function getEvents({
+  page = 1,
+  pageSize = 10,
+}: { page?: number; pageSize?: number } = {}) {
+  const safePage = Math.max(1, Math.floor(page))
+  const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)))
+  const skip = (safePage - 1) * safePageSize
+
+  const [events, totalCount] = await prisma.$transaction([
+    prisma.event.findMany({
+      orderBy: { createdAt: 'desc' },
+      skip,
+      take: safePageSize,
+    }),
+    prisma.event.count(),
+  ])
+
+  return {
+    events,
+    totalCount,
+    page: safePage,
+    pageSize: safePageSize,
+    totalPages: Math.max(1, Math.ceil(totalCount / safePageSize)),
+  }
+}
+
+export async function getEventsCount() {
+  return prisma.event.count()
 }
 
 export async function deleteEvent(id: string) {

@@ -1,6 +1,6 @@
 'use client'
 
-import React, { useState, useEffect, useRef, useTransition } from 'react'
+import React, { useCallback, useState, useEffect, useRef, useTransition } from 'react'
 import { Plus, Trash2, Edit2, Loader } from 'lucide-react'
 import {
   createEvent,
@@ -15,6 +15,15 @@ import {
   DialogTitle,
   DialogDescription,
 } from '@/components/ui/dialog'
+import {
+  Pagination,
+  PaginationContent,
+  PaginationEllipsis,
+  PaginationItem,
+  PaginationLink,
+  PaginationNext,
+  PaginationPrevious,
+} from '@/components/ui/pagination'
 
 type Event = {
   id: string
@@ -33,6 +42,8 @@ type Event = {
   featured: boolean
   n1coProductId: string | null
 }
+
+const PAGE_SIZE = 10
 
 const EMPTY_FORM = {
   sku: '',
@@ -60,6 +71,8 @@ export default function EventsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [formData, setFormData] = useState(EMPTY_FORM)
   const [isPending, startTransition] = useTransition()
+  const [page, setPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
   const dialogContentRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -68,12 +81,29 @@ export default function EventsPage() {
     }
   }, [error])
 
+  const refresh = useCallback(
+    async (targetPage = page) => {
+      setLoading(true)
+      try {
+        const result = await getEvents({ page: targetPage, pageSize: PAGE_SIZE })
+        setEvents(result.events)
+        setTotalPages(result.totalPages)
+        if (result.page !== targetPage) {
+          setPage(result.page)
+        }
+      } catch {
+        setError('Error al cargar eventos')
+      } finally {
+        setLoading(false)
+      }
+    },
+    [page],
+  )
+
   useEffect(() => {
-    getEvents()
-      .then(setEvents)
-      .catch(() => setError('Error al cargar eventos'))
-      .finally(() => setLoading(false))
-  }, [])
+    refresh(page)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [page])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -116,8 +146,13 @@ export default function EventsPage() {
         return
       }
 
-      const refreshed = await getEvents()
-      setEvents(refreshed)
+      if (editingId) {
+        await refresh(page)
+      } else if (page === 1) {
+        await refresh(1)
+      } else {
+        setPage(1)
+      }
       setFormData(EMPTY_FORM)
       setEditingId(null)
       setShowForm(false)
@@ -133,7 +168,11 @@ export default function EventsPage() {
         setError(result.error)
         return
       }
-      setEvents(events.filter((ev) => ev.id !== id))
+      if (events.length === 1 && page > 1) {
+        setPage(page - 1)
+      } else {
+        await refresh(page)
+      }
     })
   }
 
@@ -551,6 +590,78 @@ export default function EventsPage() {
           </table>
         </div>
       )}
+
+      {!loading && totalPages > 1 && (
+        <Pagination className='mt-4'>
+          <PaginationContent>
+            <PaginationItem>
+              <PaginationPrevious
+                href='#'
+                aria-disabled={page === 1}
+                className={
+                  page === 1 ? 'pointer-events-none opacity-50' : undefined
+                }
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (page > 1) setPage(page - 1)
+                }}
+              />
+            </PaginationItem>
+            {getPageNumbers(page, totalPages).map((p, idx) =>
+              p === 'ellipsis' ? (
+                <PaginationItem key={`ellipsis-${idx}`}>
+                  <PaginationEllipsis />
+                </PaginationItem>
+              ) : (
+                <PaginationItem key={p}>
+                  <PaginationLink
+                    href='#'
+                    isActive={p === page}
+                    onClick={(e) => {
+                      e.preventDefault()
+                      if (p !== page) setPage(p)
+                    }}
+                  >
+                    {p}
+                  </PaginationLink>
+                </PaginationItem>
+              ),
+            )}
+            <PaginationItem>
+              <PaginationNext
+                href='#'
+                aria-disabled={page === totalPages}
+                className={
+                  page === totalPages
+                    ? 'pointer-events-none opacity-50'
+                    : undefined
+                }
+                onClick={(e) => {
+                  e.preventDefault()
+                  if (page < totalPages) setPage(page + 1)
+                }}
+              />
+            </PaginationItem>
+          </PaginationContent>
+        </Pagination>
+      )}
     </div>
   )
+}
+
+function getPageNumbers(
+  current: number,
+  total: number,
+): Array<number | 'ellipsis'> {
+  if (total <= 7) {
+    return Array.from({ length: total }, (_, i) => i + 1)
+  }
+  const pages: Array<number | 'ellipsis'> = [1]
+  const start = Math.max(2, current - 1)
+  const end = Math.min(total - 1, current + 1)
+  if (start > 2) pages.push('ellipsis')
+  for (let i = start; i <= end; i++) pages.push(i)
+  if (end < total - 1) pages.push('ellipsis')
+  pages.push(total)
+  return pages
 }

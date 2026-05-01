@@ -1,8 +1,8 @@
 import { BarChart3, Package, Users } from 'lucide-react'
-import { getEvents } from "@/app/actions/events"
+import { getEventsCount } from "@/app/actions/events"
 
 export default async function DashboardPage() {
-  const events = await getEvents()
+  const totalEvents = await getEventsCount()
 
   return (
     <div className="space-y-6">
@@ -19,7 +19,7 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-xs text-muted-foreground uppercase tracking-wider">Total Eventos</p>
-              <p className="text-2xl font-bold text-foreground">{events.length}</p>
+              <p className="text-2xl font-bold text-foreground">{totalEvents}</p>
             </div>
           </div>
         </div>
