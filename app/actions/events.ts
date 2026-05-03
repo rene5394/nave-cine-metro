@@ -103,7 +103,7 @@ function toN1COProduct(
     sku: event.sku,
     name: event.name,
     description: event.description,
-    stock: event.availableTickets,
+    ...(event.availableTickets > 0 ? { stock: event.availableTickets } : {}),
     price: event.priceInCents / 100,
     collections: [event.category],
     image: event.image,

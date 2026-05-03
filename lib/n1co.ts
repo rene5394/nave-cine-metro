@@ -51,7 +51,7 @@ export interface N1COProductSync {
   sku: string
   name: string
   description: string
-  stock: number
+  stock?: number
   price: number
   collections: string[]
   image?: string
@@ -120,13 +120,19 @@ export async function createProducts(
 ) {
   const token = await getAccessToken()
 
+  console.log('Syncing products to N1CO...', { products, collections })
+  console.log('Image', products[0]?.image)
+  console.log('Images', products[0]?.images)
+
+  const productsFormatted = products.map(({ images, ...rest }) => rest)
+
   const response = await fetch(`${N1CO_BASE_URL}/Products/Sync`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${token}`,
     },
-    body: JSON.stringify({ products, collections }),
+    body: JSON.stringify({ products: productsFormatted, collections }),
   })
 
   if (!response.ok) {
@@ -145,6 +151,10 @@ export async function updateProducts(
   collections: N1COCollection[] = [],
 ) {
   const token = await getAccessToken()
+
+  console.log('Syncing products to N1CO...', { products, collections })
+  console.log('Image', products[0]?.image)
+  console.log('Images', products[0]?.images)
 
   const productsFormatted = products.map(({ image, ...rest }) => rest)
 

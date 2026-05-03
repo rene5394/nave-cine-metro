@@ -56,7 +56,7 @@ const EMPTY_FORM = {
   venue: '',
   city: '',
   priceInCents: 0,
-  availableTickets: 0,
+  availableTickets: '' as number | '',
   featured: false,
   image: null as File | null,
   syncN1co: false,
@@ -145,7 +145,10 @@ export default function EventsPage() {
     fd.set('venue', formData.venue)
     fd.set('city', formData.city)
     fd.set('priceInCents', String(formData.priceInCents))
-    fd.set('availableTickets', String(formData.availableTickets))
+    fd.set(
+      'availableTickets',
+      String(formData.availableTickets === '' ? 0 : formData.availableTickets),
+    )
     fd.set('featured', String(formData.featured))
     fd.set('syncN1co', String(formData.syncN1co))
     fd.set('n1coProductId', formData.n1coProductId)
@@ -213,7 +216,7 @@ export default function EventsPage() {
       venue: event.venue,
       city: event.city,
       priceInCents: event.priceInCents,
-      availableTickets: event.availableTickets,
+      availableTickets: event.availableTickets === 0 ? '' : event.availableTickets,
       featured: event.featured,
       image: null,
       syncN1co: !!event.n1coProductId,
@@ -475,17 +478,22 @@ export default function EventsPage() {
               </div>
               <div>
                 <label className='mb-1 block text-xs text-muted-foreground'>
-                  Tickets disponibles
+                  Tickets disponibles (dejar vacío para no limitado)
                 </label>
                 <input
                   type='number'
-                  placeholder='Tickets'
-                  value={formData.availableTickets || ''}
+                  min={0}
+                  placeholder='Numero de tickets'
+                  value={formData.availableTickets}
                   onChange={(e) =>
-                    set('availableTickets', parseInt(e.target.value) || 0)
+                    set(
+                      'availableTickets',
+                      e.target.value === ''
+                        ? ''
+                        : parseInt(e.target.value) || 0,
+                    )
                   }
                   className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
-                  required
                 />
               </div>
               <label className='flex items-center gap-2 text-sm'>
@@ -627,7 +635,9 @@ export default function EventsPage() {
                       ${(event.priceInCents / 100).toFixed(2)}
                     </td>
                     <td className='px-6 py-4 text-sm text-foreground'>
-                      {event.availableTickets}
+                      {event.availableTickets === 0
+                        ? 'Ilimitado'
+                        : event.availableTickets}
                     </td>
                     <td className='px-6 py-4 text-sm'>
                       <div className='flex gap-2'>
