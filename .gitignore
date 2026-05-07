@@ -13,3 +13,5 @@ node_modules/
 .DS_Store
 /lib/generated/prisma
 *.tsbuildinfo
+coverage/
+*.log
