@@ -519,15 +519,20 @@ export default function EventsPage() {
                 Ya existe en N1co
               </label>
               {formData.syncN1co && (
-                <input
-                  type='text'
-                  placeholder='N1co product id'
-                  value={formData.n1coProductId}
-                  onChange={(e) => set('n1coProductId', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm md:col-span-2'
-                  required
-                  disabled={!!editingId}
-                />
+                <div className='flex flex-col gap-1 md:col-span-2'>
+                  <input
+                    type='text'
+                    placeholder='N1co product id'
+                    value={formData.n1coProductId}
+                    onChange={(e) => set('n1coProductId', e.target.value)}
+                    className='rounded-lg border border-border bg-input px-3 py-2 text-sm'
+                    required
+                    disabled={!!editingId}
+                  />
+                  <p className='text-xs text-muted-foreground'>
+                    El N1co product id es el último segmento numérico en la URL del producto en N1co.
+                  </p>
+                </div>
               )}
             </div>
 
