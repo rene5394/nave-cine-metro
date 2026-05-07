@@ -8,8 +8,7 @@ interface CartLineItem {
   quantity: number
 }
 
-const BASE_URL =
-  process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
+const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || 'http://localhost:3000'
 
 export async function startCheckout(cartItems: CartLineItem[]) {
   const eventIds = cartItems.map((item) => item.eventId)
@@ -60,11 +59,19 @@ export async function startCheckout(cartItems: CartLineItem[]) {
     orderReference: order.id,
     lineItems: cartItems.map((item) => {
       const event = events.find((e) => e.id === item.eventId)!
-      return { sku: event.sku, quantity: item.quantity }
+      return {
+        sku: event.sku,
+        quantity: item.quantity,
+        product: {
+          name: event.name,
+          price: event.priceInCents / 100,
+          imageUrl: event.image ?? '',
+          requiresShipping: false,
+        },
+      }
     }),
     successUrl: `${BASE_URL}/payment-success?orderCode=PLACEHOLDER`,
     cancelUrl: `${BASE_URL}/checkout?cancelled=true`,
-    metadata: [{ key: 'orderId', value: order.id }],
   })
 
   // Update order with n1co orderCode
@@ -116,7 +123,10 @@ export async function verifyPayment(orderCode: string) {
     return { status: 'PAID' as const, orderCode }
   }
 
-  if (n1coOrder.orderStatus === 'CANCELLED' && localOrder.status === 'PENDING') {
+  if (
+    n1coOrder.orderStatus === 'CANCELLED' &&
+    localOrder.status === 'PENDING'
+  ) {
     await prisma.order.update({
       where: { id: localOrder.id },
       data: { status: 'CANCELLED' },

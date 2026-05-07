@@ -5,8 +5,8 @@ const N1CO_BASE_URL =
 
 const N1CO_PAY_BASE_URL =
   process.env.N1CO_ENV === 'live'
-    ? 'https://api-pay.n1co.shop/api/v3'
-    : 'https://api-pay-sandbox.n1co.shop/api/v3'
+    ? 'https://api-pay.n1co.shop/api'
+    : 'https://api-pay-sandbox.n1co.shop/api'
 
 const CLIENT_ID = process.env.N1CO_CLIENT_ID
 const CLIENT_SECRET = process.env.N1CO_CLIENT_SECRET
@@ -15,10 +15,19 @@ const PAY_SECRET = process.env.N1CO_PAY_SECRET
 export interface N1COCheckoutLinkParams {
   orderName: string
   orderReference: string
-  lineItems: Array<{ sku: string; quantity: number }>
+  lineItems: Array<{
+    sku: string
+    quantity: number
+    product: {
+      name: string
+      price: number
+      imageUrl: string
+      requiresShipping: boolean
+    }
+  }>
   successUrl: string
   cancelUrl: string
-  metadata?: Array<{ key: string; value: string }>
+  expirationMinutes?: number
 }
 
 export interface N1COCheckoutLinkResponse {
@@ -120,10 +129,6 @@ export async function createProducts(
 ) {
   const token = await getAccessToken()
 
-  console.log('Syncing products to N1CO...', { products, collections })
-  console.log('Image', products[0]?.image)
-  console.log('Images', products[0]?.images)
-
   const productsFormatted = products.map(({ images, ...rest }) => rest)
 
   const response = await fetch(`${N1CO_BASE_URL}/Products/Sync`, {
@@ -151,10 +156,6 @@ export async function updateProducts(
   collections: N1COCollection[] = [],
 ) {
   const token = await getAccessToken()
-
-  console.log('Syncing products to N1CO...', { products, collections })
-  console.log('Image', products[0]?.image)
-  console.log('Images', products[0]?.images)
 
   const productsFormatted = products.map(({ image, ...rest }) => rest)
 
@@ -224,10 +225,11 @@ export async function createCheckoutLink(
     body: JSON.stringify({
       orderName: params.orderName,
       orderReference: params.orderReference,
+      orderDescription: `Compra de ${params.lineItems.length} producto(s)`,
       lineItems: params.lineItems,
       successUrl: params.successUrl,
       cancelUrl: params.cancelUrl,
-      metadata: params.metadata,
+      expirationMinutes: params.expirationMinutes ?? 30,
     }),
   })
 
