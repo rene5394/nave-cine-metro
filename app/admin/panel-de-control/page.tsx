@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { BarChart3, Package, Users } from "lucide-react";
 import { getEventsCount } from "@/app/actions/events";
 
@@ -12,7 +13,10 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+        <Link
+          href="/admin/eventos"
+          className="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary"
+        >
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-primary/20">
               <Package className="h-6 w-6 text-primary" />
@@ -24,9 +28,12 @@ export default async function DashboardPage() {
               <p className="text-2xl font-bold text-foreground">{totalEvents}</p>
             </div>
           </div>
-        </div>
+        </Link>
 
-        <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
+        <Link
+          href="/admin/suscripciones"
+          className="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary"
+        >
           <div className="flex items-center gap-4">
             <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-accent/20">
               <Users className="h-6 w-6 text-accent" />
@@ -36,7 +43,7 @@ export default async function DashboardPage() {
               <p className="text-2xl font-bold text-foreground">0</p>
             </div>
           </div>
-        </div>
+        </Link>
 
         <div className="rounded-lg border border-border bg-card p-6 shadow-sm">
           <div className="flex items-center gap-4">

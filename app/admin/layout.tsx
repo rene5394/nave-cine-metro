@@ -2,17 +2,31 @@
 
 import Image from "next/image";
 import Link from "next/link";
-import { usePathname } from "next/navigation";
-import { BarChart3, Package, Users } from "lucide-react";
+import { usePathname, useRouter } from "next/navigation";
+import { BarChart3, LogOut, Package, User, Users } from "lucide-react";
+import { logout } from "@/app/actions/auth";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 const NAV_ITEMS = [
-  { href: "/admin/dashboard", label: "Dashboard", icon: BarChart3 },
-  { href: "/admin/events", label: "Eventos", icon: Package },
-  { href: "/admin/subscriptions", label: "Suscripciones", icon: Users },
+  { href: "/admin/panel-de-control", label: "Panel de Control", icon: BarChart3 },
+  { href: "/admin/eventos", label: "Eventos", icon: Package },
+  { href: "/admin/suscripciones", label: "Suscripciones", icon: Users },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
+
+  const handleLogout = async () => {
+    await logout();
+    router.push("/login");
+    router.refresh();
+  };
 
   return (
     <div className="min-h-screen bg-background">
@@ -34,7 +48,25 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
               EntradasYA Admin
             </span>
           </div>
-          <div className="text-sm text-white/80">Panel de administración</div>
+          <div className="flex items-center gap-3">
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="Abrir menú de usuario"
+                  className="flex h-9 w-9 items-center justify-center rounded-full bg-white/10 text-white transition-colors hover:bg-white/20 focus:outline-none focus:ring-2 focus:ring-white/40"
+                >
+                  <User className="h-5 w-5" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem onClick={handleLogout}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  Cerrar sesión
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          </div>
         </div>
       </nav>
 
