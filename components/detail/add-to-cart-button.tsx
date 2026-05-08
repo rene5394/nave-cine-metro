@@ -1,24 +1,24 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import { Minus, Plus, ShoppingCart, Check } from "lucide-react"
-import { useCart } from "@/lib/cart-context"
-import { formatPrice, type TicketEvent } from "@/lib/events-shared"
+import { useState } from "react";
+import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
+import { useCart } from "@/lib/cart-context";
+import { formatPrice, type TicketEvent } from "@/lib/events-shared";
 
 interface AddToCartButtonProps {
-  event: TicketEvent
+  event: TicketEvent;
 }
 
 export default function AddToCartButton({ event }: AddToCartButtonProps) {
-  const { addItem } = useCart()
-  const [quantity, setQuantity] = useState(1)
-  const [added, setAdded] = useState(false)
+  const { addItem } = useCart();
+  const [quantity, setQuantity] = useState(1);
+  const [added, setAdded] = useState(false);
 
   const handleAdd = () => {
-    addItem(event, quantity)
-    setAdded(true)
-    setTimeout(() => setAdded(false), 2000)
-  }
+    addItem(event, quantity);
+    setAdded(true);
+    setTimeout(() => setAdded(false), 2000);
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -34,14 +34,10 @@ export default function AddToCartButton({ event }: AddToCartButtonProps) {
           >
             <Minus className="h-4 w-4" />
           </button>
-          <span className="w-10 text-center text-base font-bold text-foreground">
-            {quantity}
-          </span>
+          <span className="w-10 text-center text-base font-bold text-foreground">{quantity}</span>
           <button
             type="button"
-            onClick={() =>
-              setQuantity((q) => Math.min(event.availableTickets, q + 1))
-            }
+            onClick={() => setQuantity((q) => Math.min(event.availableTickets, q + 1))}
             style={{ backgroundColor: "#9e5656" }}
             className="flex h-9 w-9 items-center justify-center rounded-lg text-white transition-all hover:shadow-lg"
             aria-label="Aumentar cantidad"
@@ -85,9 +81,7 @@ export default function AddToCartButton({ event }: AddToCartButtonProps) {
         )}
       </button>
 
-      <p className="text-xs text-muted-foreground">
-        {event.availableTickets} entradas disponibles
-      </p>
+      <p className="text-xs text-muted-foreground">{event.availableTickets} entradas disponibles</p>
     </div>
-  )
+  );
 }

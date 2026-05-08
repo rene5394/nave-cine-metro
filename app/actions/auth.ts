@@ -12,7 +12,7 @@ const loginSchema = z.object({
 
 export async function login(
   _prevState: { success: boolean; error?: string } | null,
-  formData: FormData
+  formData: FormData,
 ) {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),

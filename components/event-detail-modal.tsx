@@ -1,29 +1,29 @@
-"use client"
+"use client";
 
-import { useEffect } from "react"
-import { X } from "lucide-react"
-import { useEventModal } from "@/lib/event-modal-context"
-import UnifiedDetail from "./detail/unified-detail"
+import { useEffect } from "react";
+import { X } from "lucide-react";
+import { useEventModal } from "@/lib/event-modal-context";
+import UnifiedDetail from "./detail/unified-detail";
 
 export default function EventDetailModal() {
-  const { selectedEvent, closeEvent } = useEventModal()
+  const { selectedEvent, closeEvent } = useEventModal();
 
   useEffect(() => {
     const handleEsc = (e: KeyboardEvent) => {
-      if (e.key === "Escape") closeEvent()
-    }
+      if (e.key === "Escape") closeEvent();
+    };
     if (selectedEvent) {
-      document.body.style.overflow = "hidden"
-      window.addEventListener("keydown", handleEsc)
-      window.scrollTo({ top: 0, behavior: "smooth" })
+      document.body.style.overflow = "hidden";
+      window.addEventListener("keydown", handleEsc);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
     return () => {
-      document.body.style.overflow = ""
-      window.removeEventListener("keydown", handleEsc)
-    }
-  }, [selectedEvent, closeEvent])
+      document.body.style.overflow = "";
+      window.removeEventListener("keydown", handleEsc);
+    };
+  }, [selectedEvent, closeEvent]);
 
-  if (!selectedEvent) return null
+  if (!selectedEvent) return null;
 
   return (
     <div className="fixed inset-0 z-50 overflow-y-auto">
@@ -36,18 +36,18 @@ export default function EventDetailModal() {
       />
 
       {/* Modal content - scrolls with page */}
-      <div className="relative min-h-screen flex items-start justify-center p-4 md:p-8">
+      <div className="relative flex min-h-screen items-start justify-center p-4 md:p-8">
         <div
           role="dialog"
           aria-modal="true"
           aria-label={`Detalle del evento: ${selectedEvent.name}`}
-          className="relative z-10 w-full max-w-5xl my-8"
+          className="relative z-10 my-8 w-full max-w-5xl"
         >
           {/* Close button */}
           <button
             type="button"
             onClick={closeEvent}
-            className="absolute -top-4 -right-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-700 shadow-xl transition-all hover:bg-gray-100"
+            className="absolute -right-4 -top-4 z-30 flex h-12 w-12 items-center justify-center rounded-full bg-white text-gray-700 shadow-xl transition-all hover:bg-gray-100"
             aria-label="Cerrar detalle del evento"
           >
             <X className="h-6 w-6" />
@@ -57,5 +57,5 @@ export default function EventDetailModal() {
         </div>
       </div>
     </div>
-  )
+  );
 }

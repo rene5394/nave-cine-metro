@@ -1,70 +1,59 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import Link from "next/link"
-import { useRouter, useSearchParams } from "next/navigation"
-import {
-  AlertCircle,
-  ArrowLeft,
-  Calendar,
-  Loader2,
-  Lock,
-  ShoppingBag,
-  Ticket,
-} from "lucide-react"
-import { useCart } from "@/lib/cart-context"
-import { formatPrice, formatShortDate } from "@/lib/events-shared"
-import { startCheckout } from "@/app/actions/checkout"
+import { useState } from "react";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { AlertCircle, ArrowLeft, Calendar, Loader2, Lock, ShoppingBag, Ticket } from "lucide-react";
+import { useCart } from "@/lib/cart-context";
+import { formatPrice, formatShortDate } from "@/lib/events-shared";
+import { startCheckout } from "@/app/actions/checkout";
 
-const ACCENT = "#9e5656"
+const ACCENT = "#9e5656";
 
 export default function CheckoutPage() {
-  const { items, totalItems, totalPriceInCents } = useCart()
-  const router = useRouter()
-  const searchParams = useSearchParams()
-  const cancelled = searchParams.get("cancelled") === "true"
+  const { items, totalItems, totalPriceInCents } = useCart();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const cancelled = searchParams.get("cancelled") === "true";
 
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   if (items.length === 0 && !loading) {
-    router.replace("/")
-    return null
+    router.replace("/");
+    return null;
   }
 
   async function handleCheckout() {
-    setLoading(true)
-    setError(null)
+    setLoading(true);
+    setError(null);
 
     try {
       const cartItems = items.map((item) => ({
         eventId: item.event.id,
         quantity: item.quantity,
-      }))
+      }));
 
-      const result = await startCheckout(cartItems)
+      const result = await startCheckout(cartItems);
 
       if ("error" in result) {
-        setError(result.error as string)
-        setLoading(false)
-        return
+        setError(result.error as string);
+        setLoading(false);
+        return;
       }
 
-      window.location.href = result.paymentLinkUrl as string
+      window.location.href = result.paymentLinkUrl as string;
     } catch {
-      setError("Ocurrió un error al procesar tu orden. Intenta de nuevo.")
-      setLoading(false)
+      setError("Ocurrió un error al procesar tu orden. Intenta de nuevo.");
+      setLoading(false);
     }
   }
 
   return (
     <div className="min-h-screen bg-gray-50 font-sans">
       {/* Header */}
-      <header
-        style={{ backgroundColor: "#333333" }}
-        className="sticky top-0 z-40 shadow-md"
-      >
+      <header style={{ backgroundColor: "#333333" }} className="sticky top-0 z-40 shadow-md">
         <div className="mx-auto flex max-w-7xl items-center justify-between px-6 py-4">
           <Link
             href="/"
@@ -111,12 +100,9 @@ export default function CheckoutPage() {
         )}
 
         {/* Order Summary Card */}
-        <div className="overflow-hidden rounded-2xl bg-white shadow-sm border border-gray-200">
+        <div className="overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-sm">
           {/* Header */}
-          <div
-            style={{ backgroundColor: ACCENT }}
-            className="flex items-center gap-3 px-6 py-4"
-          >
+          <div style={{ backgroundColor: ACCENT }} className="flex items-center gap-3 px-6 py-4">
             <ShoppingBag className="h-5 w-5 text-white" />
             <h2 className="text-base font-bold text-white">Resumen de Orden</h2>
           </div>
@@ -133,9 +119,9 @@ export default function CheckoutPage() {
                     className="object-cover"
                   />
                 </div>
-                <div className="flex flex-1 flex-col justify-between gap-1 min-w-0">
+                <div className="flex min-w-0 flex-1 flex-col justify-between gap-1">
                   <div>
-                    <p className="text-sm font-bold text-gray-900 line-clamp-2 leading-snug">
+                    <p className="line-clamp-2 text-sm font-bold leading-snug text-gray-900">
                       {item.event.name}
                     </p>
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
@@ -162,19 +148,18 @@ export default function CheckoutPage() {
           </div>
 
           {/* Totals */}
-          <div className="border-t border-gray-100 bg-gray-50 px-5 py-4 space-y-2">
+          <div className="space-y-2 border-t border-gray-100 bg-gray-50 px-5 py-4">
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>
-                Subtotal ({totalItems}{" "}
-                {totalItems === 1 ? "entrada" : "entradas"})
+                Subtotal ({totalItems} {totalItems === 1 ? "entrada" : "entradas"})
               </span>
               <span>{formatPrice(totalPriceInCents)}</span>
             </div>
             <div className="flex items-center justify-between text-sm text-gray-500">
               <span>Cargo por servicio</span>
-              <span className="text-green-600 font-medium">Gratis</span>
+              <span className="font-medium text-green-600">Gratis</span>
             </div>
-            <div className="border-t border-gray-200 pt-2 flex items-center justify-between">
+            <div className="flex items-center justify-between border-t border-gray-200 pt-2">
               <span className="text-base font-bold text-gray-900">Total</span>
               <span className="text-xl font-bold" style={{ color: ACCENT }}>
                 {formatPrice(totalPriceInCents)}
@@ -188,7 +173,7 @@ export default function CheckoutPage() {
               onClick={handleCheckout}
               disabled={loading}
               style={{ backgroundColor: loading ? undefined : ACCENT }}
-              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all hover:shadow-lg disabled:bg-gray-300 disabled:cursor-not-allowed"
+              className="flex w-full items-center justify-center gap-2 rounded-xl py-3.5 text-sm font-bold text-white transition-all hover:shadow-lg disabled:cursor-not-allowed disabled:bg-gray-300"
             >
               {loading ? (
                 <>
@@ -221,11 +206,11 @@ export default function CheckoutPage() {
             ))}
           </div>
           <p className="mt-3 text-xs text-gray-400">
-            Tus datos están protegidos con encriptación SSL de 256-bit.
-            Procesado de forma segura con N1co.
+            Tus datos están protegidos con encriptación SSL de 256-bit. Procesado de forma segura
+            con N1co.
           </p>
         </div>
       </main>
     </div>
-  )
+  );
 }
