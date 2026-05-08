@@ -1,13 +1,12 @@
-"use client"
+"use client";
 
-import { useState } from "react"
-import Image from "next/image"
-import { useRouter } from "next/navigation"
-import { X, Minus, Plus, ShoppingCart, Trash2, Ticket } from "lucide-react"
-import { useCart } from "@/lib/cart-context"
-import { formatPrice } from "@/lib/events-shared"
+import Image from "next/image";
+import { useRouter } from "next/navigation";
+import { X, Minus, Plus, ShoppingCart, Trash2, Ticket } from "lucide-react";
+import { useCart } from "@/lib/cart-context";
+import { formatPrice } from "@/lib/events-shared";
 
-const ACCENT = "#9e5656"
+const ACCENT = "#9e5656";
 
 export default function CartSidebar() {
   const {
@@ -19,18 +18,18 @@ export default function CartSidebar() {
     totalPriceInCents,
     isCartOpen,
     setIsCartOpen,
-  } = useCart()
+  } = useCart();
 
-  const router = useRouter()
+  const router = useRouter();
 
-  const handleClose = () => setIsCartOpen(false)
+  const handleClose = () => setIsCartOpen(false);
 
   const handleCheckout = () => {
-    setIsCartOpen(false)
-    router.push("/checkout")
-  }
+    setIsCartOpen(false);
+    router.push("/checkout");
+  };
 
-  if (!isCartOpen) return null
+  if (!isCartOpen) return null;
 
   return (
     <div
@@ -44,7 +43,7 @@ export default function CartSidebar() {
 
       {/* Sidebar */}
       <aside
-        className="fixed top-0 right-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
+        className="fixed right-0 top-0 z-50 flex h-full w-full max-w-md flex-col bg-white shadow-2xl"
         onClick={(e) => e.stopPropagation()}
         onKeyDown={() => {}}
         role="presentation"
@@ -79,17 +78,13 @@ export default function CartSidebar() {
         {/* Body */}
         <div className="flex-1 overflow-y-auto bg-gray-50">
           {items.length === 0 ? (
-            <div className="flex flex-col items-center justify-center gap-4 py-24 px-6 text-center">
+            <div className="flex flex-col items-center justify-center gap-4 px-6 py-24 text-center">
               <div className="flex h-20 w-20 items-center justify-center rounded-full bg-gray-100">
                 <Ticket className="h-9 w-9 text-gray-400" />
               </div>
               <div>
-                <p className="text-base font-semibold text-gray-800">
-                  Tu carrito esta vacio
-                </p>
-                <p className="mt-1 text-sm text-gray-500">
-                  Selecciona eventos para empezar
-                </p>
+                <p className="text-base font-semibold text-gray-800">Tu carrito esta vacio</p>
+                <p className="mt-1 text-sm text-gray-500">Selecciona eventos para empezar</p>
               </div>
             </div>
           ) : (
@@ -97,7 +92,7 @@ export default function CartSidebar() {
               {items.map((item) => (
                 <div
                   key={item.event.id}
-                  className="flex gap-4 rounded-2xl bg-white border border-gray-200 p-4 shadow-sm"
+                  className="flex gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
                   {/* Image */}
                   <div className="relative h-24 w-20 shrink-0 overflow-hidden rounded-xl bg-gray-200">
@@ -110,11 +105,11 @@ export default function CartSidebar() {
                   </div>
 
                   {/* Info */}
-                  <div className="flex flex-1 flex-col gap-2 min-w-0">
+                  <div className="flex min-w-0 flex-1 flex-col gap-2">
                     <div className="flex items-start justify-between gap-2">
                       <div
                         style={{ backgroundColor: ACCENT }}
-                        className="rounded px-2 py-0.5 text-xs font-bold text-white w-fit max-w-[160px] truncate"
+                        className="w-fit max-w-[160px] truncate rounded px-2 py-0.5 text-xs font-bold text-white"
                       >
                         {item.event.name}
                       </div>
@@ -136,9 +131,7 @@ export default function CartSidebar() {
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() =>
-                            updateQuantity(item.event.id, item.quantity - 1)
-                          }
+                          onClick={() => updateQuantity(item.event.id, item.quantity - 1)}
                           style={{ backgroundColor: ACCENT }}
                           className="flex h-7 w-7 items-center justify-center rounded text-white transition-all hover:shadow-md"
                           aria-label="Reducir cantidad"
@@ -150,9 +143,7 @@ export default function CartSidebar() {
                         </span>
                         <button
                           type="button"
-                          onClick={() =>
-                            updateQuantity(item.event.id, item.quantity + 1)
-                          }
+                          onClick={() => updateQuantity(item.event.id, item.quantity + 1)}
                           style={{ backgroundColor: ACCENT }}
                           className="flex h-7 w-7 items-center justify-center rounded text-white transition-all hover:shadow-md"
                           aria-label="Aumentar cantidad"
@@ -173,8 +164,8 @@ export default function CartSidebar() {
 
         {/* Footer */}
         {items.length > 0 && (
-          <div className="border-t border-gray-200 bg-white p-5 space-y-4">
-            <div className="rounded-xl bg-gray-50 px-4 py-3 flex items-center justify-between">
+          <div className="space-y-4 border-t border-gray-200 bg-white p-5">
+            <div className="flex items-center justify-between rounded-xl bg-gray-50 px-4 py-3">
               <span className="text-sm text-gray-600">
                 {totalItems} {totalItems === 1 ? "entrada" : "entradas"}
               </span>
@@ -203,5 +194,5 @@ export default function CartSidebar() {
         )}
       </aside>
     </div>
-  )
+  );
 }

@@ -1,19 +1,19 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Calendar, Clock, Theater, MapPin } from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events-shared"
-import AddToCartButton from "./add-to-cart-button"
+import Image from "next/image";
+import { Calendar, Clock, Theater } from "lucide-react";
+import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import AddToCartButton from "./add-to-cart-button";
 
 interface TeatroDetailProps {
-  event: TicketEvent
+  event: TicketEvent;
 }
 
 export default function TeatroDetail({ event }: TeatroDetailProps) {
   return (
     <div className="relative">
       {/* Elegant theater curtain-style header */}
-      <div className="relative overflow-hidden bg-gradient-to-b from-rose-950/40 via-background to-background px-6 pt-8 pb-6">
+      <div className="relative overflow-hidden bg-gradient-to-b from-rose-950/40 via-background to-background px-6 pb-6 pt-8">
         <div className="absolute inset-0 opacity-10">
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(244,63,94,0.3),transparent_50%)]" />
           <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_60%,rgba(244,63,94,0.2),transparent_50%)]" />
@@ -27,11 +27,11 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
             </span>
           </div>
 
-          <h1 className="mb-2 max-w-3xl text-2xl font-bold text-foreground md:text-4xl font-display text-balance italic">
+          <h1 className="mb-2 max-w-3xl text-balance font-display text-2xl font-bold italic text-foreground md:text-4xl">
             {event.name}
           </h1>
 
-          <p className="mb-4 max-w-2xl text-base text-muted-foreground leading-relaxed">
+          <p className="mb-4 max-w-2xl text-base leading-relaxed text-muted-foreground">
             {event.description}
           </p>
 
@@ -56,18 +56,16 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
                   className="object-cover"
                   priority
                 />
-                <div className="absolute inset-0 border-[8px] border-rose-950/20 rounded-2xl pointer-events-none" />
+                <div className="pointer-events-none absolute inset-0 rounded-2xl border-[8px] border-rose-950/20" />
               </div>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
               <div className="mb-3 flex items-center gap-2">
                 <div className="h-5 w-1 rounded-full bg-rose-500" />
-                <h3 className="text-base font-bold text-foreground">
-                  Sobre la Obra
-                </h3>
+                <h3 className="text-base font-bold text-foreground">Sobre la Obra</h3>
               </div>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {event.longDescription}
               </p>
             </div>
@@ -83,9 +81,7 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Fecha</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {formatDate(event.date)}
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{formatDate(event.date)}</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -94,9 +90,7 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Hora</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {event.time} hrs
-                    </p>
+                    <p className="text-sm font-medium text-foreground">{event.time} hrs</p>
                   </div>
                 </div>
               </div>
@@ -109,5 +103,5 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

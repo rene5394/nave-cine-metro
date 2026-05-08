@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Calendar, Clock, Film, Star, MapPin } from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events-shared"
-import AddToCartButton from "./add-to-cart-button"
+import Image from "next/image";
+import { Calendar, Clock, Film } from "lucide-react";
+import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import AddToCartButton from "./add-to-cart-button";
 
 interface CineDetailProps {
-  event: TicketEvent
+  event: TicketEvent;
 }
 
 export default function CineDetail({ event }: CineDetailProps) {
@@ -24,7 +24,7 @@ export default function CineDetail({ event }: CineDetailProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/70 to-background/20" />
         <div className="absolute inset-0 bg-gradient-to-r from-background/80 via-transparent to-background/80" />
 
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1">
+        <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/20 px-3 py-1">
           <Film className="h-4 w-4 text-amber-400" />
           <span className="text-xs font-semibold uppercase tracking-wider text-amber-400">
             Cine
@@ -51,7 +51,7 @@ export default function CineDetail({ event }: CineDetailProps) {
 
           {/* Content */}
           <div className="flex-1">
-            <h1 className="mb-3 text-2xl font-bold text-foreground md:text-3xl lg:text-4xl font-display text-balance">
+            <h1 className="mb-3 text-balance font-display text-2xl font-bold text-foreground md:text-3xl lg:text-4xl">
               {event.name}
             </h1>
 
@@ -70,7 +70,7 @@ export default function CineDetail({ event }: CineDetailProps) {
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-amber-400">
                 Sinopsis
               </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {event.longDescription}
               </p>
             </div>
@@ -82,5 +82,5 @@ export default function CineDetail({ event }: CineDetailProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

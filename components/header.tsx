@@ -1,8 +1,8 @@
-"use client"
+"use client";
 
-import { ShoppingCart, Menu, X, Ticket } from "lucide-react"
-import { useState } from "react"
-import { useCart } from "@/lib/cart-context"
+import { ShoppingCart, Menu, X, Ticket } from "lucide-react";
+import { useState } from "react";
+import { useCart } from "@/lib/cart-context";
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
@@ -11,24 +11,27 @@ const NAV_LINKS = [
   { label: "Servicios", href: "#" },
   { label: "Nosotras", href: "#" },
   { label: "Contactanos", href: "#" },
-]
+];
 
 export default function Header() {
-  const { totalItems, setIsCartOpen } = useCart()
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false)
+  const { totalItems, setIsCartOpen } = useCart();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (href: string) => {
-    setMobileMenuOpen(false)
+    setMobileMenuOpen(false);
     if (href.startsWith("#")) {
-      const el = document.getElementById(href.replace("#", ""))
-      if (el) el.scrollIntoView({ behavior: "smooth" })
+      const el = document.getElementById(href.replace("#", ""));
+      if (el) el.scrollIntoView({ behavior: "smooth" });
     } else {
-      window.location.href = href
+      window.location.assign(href);
     }
-  }
+  };
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-40 border-b border-white/10 shadow-md" style={{ backgroundColor: "#333333" }}>
+    <header
+      className="fixed left-0 right-0 top-0 z-40 border-b border-white/10 shadow-md"
+      style={{ backgroundColor: "#333333" }}
+    >
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-3">
         {/* Logo */}
         <button
@@ -37,7 +40,7 @@ export default function Header() {
           className="flex items-center gap-2"
         >
           <Ticket className="h-6 w-6 text-primary" />
-          <span className="text-xl font-bold tracking-tight text-white font-display">
+          <span className="font-display text-xl font-bold tracking-tight text-white">
             EntradasYa
           </span>
         </button>
@@ -90,7 +93,7 @@ export default function Header() {
           <button
             type="button"
             style={{ backgroundColor: "#9e5656" }}
-            className="hidden sm:inline text-sm font-bold text-white px-5 py-2 rounded transition-all hover:shadow-lg"
+            className="hidden rounded px-5 py-2 text-sm font-bold text-white transition-all hover:shadow-lg sm:inline"
           >
             Donar
           </button>
@@ -102,24 +105,23 @@ export default function Header() {
             className="flex h-10 w-10 items-center justify-center rounded text-white transition-colors hover:text-accent md:hidden"
             aria-label="Menu"
           >
-            {mobileMenuOpen ? (
-              <X className="h-5 w-5" />
-            ) : (
-              <Menu className="h-5 w-5" />
-            )}
+            {mobileMenuOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
         </div>
       </div>
 
       {/* Mobile Nav */}
       {mobileMenuOpen && (
-        <nav className="border-t border-white/10 px-4 py-2 md:hidden" style={{ backgroundColor: "#2a2a2a" }}>
+        <nav
+          className="border-t border-white/10 px-4 py-2 md:hidden"
+          style={{ backgroundColor: "#2a2a2a" }}
+        >
           {NAV_LINKS.map((link) => (
             <button
               key={link.label}
               type="button"
               onClick={() => handleNavClick(link.href)}
-              className="block w-full text-left px-4 py-3 text-sm font-medium text-white transition-colors hover:text-primary"
+              className="block w-full px-4 py-3 text-left text-sm font-medium text-white transition-colors hover:text-primary"
             >
               {link.label}
             </button>
@@ -127,5 +129,5 @@ export default function Header() {
         </nav>
       )}
     </header>
-  )
+  );
 }

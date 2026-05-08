@@ -1,12 +1,12 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import { Calendar, Clock, Music, Zap, MapPin } from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events-shared"
-import AddToCartButton from "./add-to-cart-button"
+import Image from "next/image";
+import { Calendar, Clock, Music, Zap } from "lucide-react";
+import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import AddToCartButton from "./add-to-cart-button";
 
 interface ConciertoDetailProps {
-  event: TicketEvent
+  event: TicketEvent;
 }
 
 export default function ConciertoDetail({ event }: ConciertoDetailProps) {
@@ -24,15 +24,13 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
         <div className="absolute inset-0 bg-gradient-to-t from-background via-background/50 to-sky-950/30" />
         <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,transparent_40%,hsl(var(--background))_100%)]" />
 
-        <div className="absolute top-4 left-4 z-10 flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/20 px-4 py-1.5 backdrop-blur-sm">
+        <div className="absolute left-4 top-4 z-10 flex items-center gap-2 rounded-full border border-sky-500/30 bg-sky-500/20 px-4 py-1.5 backdrop-blur-sm">
           <Music className="h-4 w-4 text-sky-400" />
-          <span className="text-xs font-bold uppercase tracking-widest text-sky-400">
-            En Vivo
-          </span>
+          <span className="text-xs font-bold uppercase tracking-widest text-sky-400">En Vivo</span>
         </div>
 
         <div className="absolute bottom-0 left-0 right-0 z-10 px-6 pb-6">
-          <h1 className="mb-2 text-2xl font-black uppercase tracking-tight text-foreground md:text-4xl font-display">
+          <h1 className="mb-2 font-display text-2xl font-black uppercase tracking-tight text-foreground md:text-4xl">
             {event.name}
           </h1>
 
@@ -53,7 +51,7 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
         <div className="flex flex-col gap-6 lg:flex-row lg:gap-10">
           <div className="flex-1">
             {/* Info cards */}
-            <div className="mb-6 grid gap-3 grid-cols-2">
+            <div className="mb-6 grid grid-cols-2 gap-3">
               <div className="rounded-xl border border-sky-500/20 bg-card p-4 text-center">
                 <Zap className="mx-auto mb-1.5 h-5 w-5 text-sky-400" />
                 <p className="text-[10px] text-muted-foreground">Formato</p>
@@ -62,17 +60,13 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
               <div className="rounded-xl border border-sky-500/20 bg-card p-4 text-center">
                 <Music className="mx-auto mb-1.5 h-5 w-5 text-sky-400" />
                 <p className="text-[10px] text-muted-foreground">Disponibles</p>
-                <p className="text-xs font-bold text-foreground">
-                  {event.availableTickets}
-                </p>
+                <p className="text-xs font-bold text-foreground">{event.availableTickets}</p>
               </div>
             </div>
 
             <div className="rounded-xl border border-border bg-card p-5">
-              <h3 className="mb-2 text-base font-bold text-foreground">
-                Sobre el Evento
-              </h3>
-              <p className="text-sm text-muted-foreground leading-relaxed">
+              <h3 className="mb-2 text-base font-bold text-foreground">Sobre el Evento</h3>
+              <p className="text-sm leading-relaxed text-muted-foreground">
                 {event.longDescription}
               </p>
             </div>
@@ -82,12 +76,10 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
           <div className="lg:w-72">
             <div className="overflow-hidden rounded-2xl border border-sky-500/20 bg-card">
               <div className="bg-gradient-to-r from-sky-600 to-sky-500 p-4">
-                <p className="text-sm font-bold text-sky-50 uppercase tracking-wider">
+                <p className="text-sm font-bold uppercase tracking-wider text-sky-50">
                   Asegura tu lugar
                 </p>
-                <p className="text-xs text-sky-100/80">
-                  Entradas limitadas
-                </p>
+                <p className="text-xs text-sky-100/80">Entradas limitadas</p>
               </div>
               <div className="p-5">
                 <AddToCartButton event={event} />
@@ -97,5 +89,5 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
         </div>
       </div>
     </div>
-  )
+  );
 }

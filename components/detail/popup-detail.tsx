@@ -1,19 +1,12 @@
-"use client"
+"use client";
 
-import Image from "next/image"
-import {
-  Calendar,
-  Clock,
-  Sparkles,
-  Users,
-  Timer,
-  MapPin,
-} from "lucide-react"
-import { type TicketEvent, formatDate } from "@/lib/events-shared"
-import AddToCartButton from "./add-to-cart-button"
+import Image from "next/image";
+import { Calendar, Clock, Sparkles, Users, Timer } from "lucide-react";
+import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import AddToCartButton from "./add-to-cart-button";
 
 interface PopupDetailProps {
-  event: TicketEvent
+  event: TicketEvent;
 }
 
 export default function PopupDetail({ event }: PopupDetailProps) {
@@ -22,10 +15,10 @@ export default function PopupDetail({ event }: PopupDetailProps) {
       {/* Playful gradient top section */}
       <div className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-emerald-950/30 via-background to-background" />
-        <div className="absolute top-0 right-0 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl" />
+        <div className="absolute right-0 top-0 h-64 w-64 rounded-full bg-emerald-500/5 blur-3xl" />
         <div className="absolute bottom-0 left-0 h-48 w-48 rounded-full bg-emerald-500/5 blur-3xl" />
 
-        <div className="relative z-10 px-6 pt-6 pb-6">
+        <div className="relative z-10 px-6 pb-6 pt-6">
           <div className="flex flex-col gap-6 lg:flex-row lg:gap-8">
             {/* Image */}
             <div className="relative lg:w-1/2">
@@ -59,11 +52,11 @@ export default function PopupDetail({ event }: PopupDetailProps) {
                 </span>
               </div>
 
-              <h1 className="mb-3 text-2xl font-bold text-foreground md:text-3xl font-display text-balance">
+              <h1 className="mb-3 text-balance font-display text-2xl font-bold text-foreground md:text-3xl">
                 {event.name}
               </h1>
 
-              <p className="mb-4 text-sm text-muted-foreground leading-relaxed">
+              <p className="mb-4 text-sm leading-relaxed text-muted-foreground">
                 {event.description}
               </p>
 
@@ -86,9 +79,7 @@ export default function PopupDetail({ event }: PopupDetailProps) {
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                       Apertura
                     </p>
-                    <p className="text-xs font-semibold text-foreground">
-                      {event.time} hrs
-                    </p>
+                    <p className="text-xs font-semibold text-foreground">{event.time} hrs</p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
@@ -117,15 +108,11 @@ export default function PopupDetail({ event }: PopupDetailProps) {
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="mb-3 flex items-center gap-2">
             <Timer className="h-5 w-5 text-emerald-400" />
-            <h3 className="text-base font-bold text-foreground">
-              Sobre esta Experiencia
-            </h3>
+            <h3 className="text-base font-bold text-foreground">Sobre esta Experiencia</h3>
           </div>
-          <p className="text-sm text-muted-foreground leading-relaxed">
-            {event.longDescription}
-          </p>
+          <p className="text-sm leading-relaxed text-muted-foreground">{event.longDescription}</p>
         </div>
       </div>
     </div>
-  )
+  );
 }

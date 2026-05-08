@@ -1,20 +1,16 @@
-'use client'
+"use client";
 
-import React, { useCallback, useState, useEffect, useRef, useTransition } from 'react'
-import { Plus, Trash2, Edit2, Loader, Star, Search } from 'lucide-react'
-import {
-  createEvent,
-  updateEvent,
-  getEvents,
-  deleteEvent,
-} from '@/app/actions/events'
+import React, { useCallback, useState, useEffect, useRef, useTransition } from "react";
+import Image from "next/image";
+import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
+import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
   DialogDescription,
-} from '@/components/ui/dialog'
+} from "@/components/ui/dialog";
 import {
   Pagination,
   PaginationContent,
@@ -23,186 +19,176 @@ import {
   PaginationLink,
   PaginationNext,
   PaginationPrevious,
-} from '@/components/ui/pagination'
+} from "@/components/ui/pagination";
 
 type Event = {
-  id: string
-  sku: string
-  name: string
-  description: string
-  longDescription: string
-  category: string
-  image: string
-  date: string
-  time: string
-  venue: string
-  city: string
-  priceInCents: number
-  availableTickets: number
-  featured: boolean
-  n1coProductId: string | null
-}
+  id: string;
+  sku: string;
+  name: string;
+  description: string;
+  longDescription: string;
+  category: string;
+  image: string;
+  date: string;
+  time: string;
+  venue: string;
+  city: string;
+  priceInCents: number;
+  availableTickets: number;
+  featured: boolean;
+  n1coProductId: string | null;
+};
 
-const PAGE_SIZE = 10
+const PAGE_SIZE = 10;
 
 const EMPTY_FORM = {
-  sku: '',
-  name: '',
-  description: '',
-  longDescription: '',
-  category: 'cine',
-  date: '',
-  time: '',
-  venue: '',
-  city: '',
+  sku: "",
+  name: "",
+  description: "",
+  longDescription: "",
+  category: "cine",
+  date: "",
+  time: "",
+  venue: "",
+  city: "",
   priceInCents: 0,
-  availableTickets: '' as number | '',
+  availableTickets: "" as number | "",
   featured: false,
   image: null as File | null,
   syncN1co: false,
-  n1coProductId: '',
-}
+  n1coProductId: "",
+};
 
 export default function EventsPage() {
-  const [events, setEvents] = useState<Event[]>([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState<string | null>(null)
-  const [showForm, setShowForm] = useState(false)
-  const [editingId, setEditingId] = useState<string | null>(null)
-  const [formData, setFormData] = useState(EMPTY_FORM)
-  const [isPending, startTransition] = useTransition()
-  const [page, setPage] = useState(1)
-  const [totalPages, setTotalPages] = useState(1)
-  const [nameFilter, setNameFilter] = useState('')
-  const [debouncedName, setDebouncedName] = useState('')
-  const [categoryFilter, setCategoryFilter] = useState<string>('')
-  const [featuredOnly, setFeaturedOnly] = useState(false)
-  const dialogContentRef = useRef<HTMLDivElement | null>(null)
+  const [events, setEvents] = useState<Event[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [showForm, setShowForm] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [formData, setFormData] = useState(EMPTY_FORM);
+  const [isPending, startTransition] = useTransition();
+  const [page, setPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [nameFilter, setNameFilter] = useState("");
+  const [debouncedName, setDebouncedName] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("");
+  const [featuredOnly, setFeaturedOnly] = useState(false);
+  const dialogContentRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    const t = setTimeout(() => setDebouncedName(nameFilter), 300)
-    return () => clearTimeout(t)
-  }, [nameFilter])
-
-  useEffect(() => {
-    setPage(1)
-  }, [debouncedName, categoryFilter, featuredOnly])
+    const t = setTimeout(() => setDebouncedName(nameFilter), 300);
+    return () => clearTimeout(t);
+  }, [nameFilter]);
 
   useEffect(() => {
     if (error && dialogContentRef.current) {
-      dialogContentRef.current.scrollTo({ top: 0, behavior: 'smooth' })
+      dialogContentRef.current.scrollTo({ top: 0, behavior: "smooth" });
     }
-  }, [error])
+  }, [error]);
 
   const refresh = useCallback(
     async (targetPage = page) => {
-      setLoading(true)
+      setLoading(true);
       try {
         const result = await getEvents({
           page: targetPage,
           pageSize: PAGE_SIZE,
           name: debouncedName || undefined,
-          category:
-            (categoryFilter as
-              | 'cine'
-              | 'teatro'
-              | 'concierto'
-              | 'popup'
-              | '') || undefined,
+          category: (categoryFilter as "cine" | "teatro" | "concierto" | "popup" | "") || undefined,
           featured: featuredOnly || undefined,
-        })
-        setEvents(result.events)
-        setTotalPages(result.totalPages)
+        });
+        setEvents(result.events);
+        setTotalPages(result.totalPages);
         if (result.page !== targetPage) {
-          setPage(result.page)
+          setPage(result.page);
         }
       } catch {
-        setError('Error al cargar eventos')
+        setError("Error al cargar eventos");
       } finally {
-        setLoading(false)
+        setLoading(false);
       }
     },
     [page, debouncedName, categoryFilter, featuredOnly],
-  )
+  );
 
   useEffect(() => {
-    refresh(page)
+    // Data fetching effect: syncs UI with backend on filter/page change.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    refresh(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedName, categoryFilter, featuredOnly])
+  }, [page, debouncedName, categoryFilter, featuredOnly]);
 
   const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setError(null)
+    e.preventDefault();
+    setError(null);
 
-    const fd = new FormData()
-    fd.set('sku', formData.sku)
-    fd.set('name', formData.name)
-    fd.set('description', formData.description)
-    fd.set('longDescription', formData.longDescription)
-    fd.set('category', formData.category)
-    fd.set('date', formData.date)
-    fd.set('time', formData.time)
-    fd.set('venue', formData.venue)
-    fd.set('city', formData.city)
-    fd.set('priceInCents', String(formData.priceInCents))
+    const fd = new FormData();
+    fd.set("sku", formData.sku);
+    fd.set("name", formData.name);
+    fd.set("description", formData.description);
+    fd.set("longDescription", formData.longDescription);
+    fd.set("category", formData.category);
+    fd.set("date", formData.date);
+    fd.set("time", formData.time);
+    fd.set("venue", formData.venue);
+    fd.set("city", formData.city);
+    fd.set("priceInCents", String(formData.priceInCents));
     fd.set(
-      'availableTickets',
-      String(formData.availableTickets === '' ? 0 : formData.availableTickets),
-    )
-    fd.set('featured', String(formData.featured))
-    fd.set('syncN1co', String(formData.syncN1co))
-    fd.set('n1coProductId', formData.n1coProductId)
+      "availableTickets",
+      String(formData.availableTickets === "" ? 0 : formData.availableTickets),
+    );
+    fd.set("featured", String(formData.featured));
+    fd.set("syncN1co", String(formData.syncN1co));
+    fd.set("n1coProductId", formData.n1coProductId);
     if (formData.image) {
-      fd.set('image', formData.image)
+      fd.set("image", formData.image);
     }
 
     startTransition(async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const result: any = editingId
-        ? await updateEvent(editingId, fd)
-        : await createEvent(fd)
+      const result: any = editingId ? await updateEvent(editingId, fd) : await createEvent(fd);
 
       if (result.error) {
-        const err = result.error
+        const err = result.error;
         const messages =
-          typeof err === 'string'
+          typeof err === "string"
             ? err
             : Object.values(err as Record<string, string[]>)
                 .flat()
-                .join(', ')
-        setError(messages)
-        return
+                .join(", ");
+        setError(messages);
+        return;
       }
 
       if (editingId) {
-        await refresh(page)
+        await refresh(page);
       } else if (page === 1) {
-        await refresh(1)
+        await refresh(1);
       } else {
-        setPage(1)
+        setPage(1);
       }
-      setFormData(EMPTY_FORM)
-      setEditingId(null)
-      setShowForm(false)
-    })
-  }
+      setFormData(EMPTY_FORM);
+      setEditingId(null);
+      setShowForm(false);
+    });
+  };
 
   const handleDelete = async (id: string) => {
-    if (!confirm('¿Eliminar este evento?')) return
+    if (!confirm("¿Eliminar este evento?")) return;
 
     startTransition(async () => {
-      const result = await deleteEvent(id)
-      if ('error' in result && result.error) {
-        setError(result.error)
-        return
+      const result = await deleteEvent(id);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
       }
       if (events.length === 1 && page > 1) {
-        setPage(page - 1)
+        setPage(page - 1);
       } else {
-        await refresh(page)
+        await refresh(page);
       }
-    })
-  }
+    });
+  };
 
   const handleEdit = (event: Event) => {
     setFormData({
@@ -216,80 +202,85 @@ export default function EventsPage() {
       venue: event.venue,
       city: event.city,
       priceInCents: event.priceInCents,
-      availableTickets: event.availableTickets === 0 ? '' : event.availableTickets,
+      availableTickets: event.availableTickets === 0 ? "" : event.availableTickets,
       featured: event.featured,
       image: null,
       syncN1co: !!event.n1coProductId,
-      n1coProductId: event.n1coProductId ?? '',
-    })
-    setEditingId(event.id)
-    setError(null)
-    setShowForm(true)
-  }
+      n1coProductId: event.n1coProductId ?? "",
+    });
+    setEditingId(event.id);
+    setError(null);
+    setShowForm(true);
+  };
 
   const set = (field: string, value: string | number | boolean | File | null) =>
-    setFormData((prev) => ({ ...prev, [field]: value }))
+    setFormData((prev) => ({ ...prev, [field]: value }));
 
   return (
     <div>
-      <div className='mb-8 flex items-center justify-between'>
+      <div className="mb-8 flex items-center justify-between">
         <div>
-          <h2 className='text-2xl font-bold text-foreground font-display'>
-            Eventos
-          </h2>
-          <p className='text-muted-foreground'>
-            Gestiona tus eventos (se sincronizan con N1CO)
-          </p>
+          <h2 className="font-display text-2xl font-bold text-foreground">Eventos</h2>
+          <p className="text-muted-foreground">Gestiona tus eventos (se sincronizan con N1CO)</p>
         </div>
         <button
-          type='button'
+          type="button"
           onClick={() => {
-            setEditingId(null)
-            setFormData(EMPTY_FORM)
-            setError(null)
-            setShowForm(!showForm)
+            setEditingId(null);
+            setFormData(EMPTY_FORM);
+            setError(null);
+            setShowForm(!showForm);
           }}
-          className='flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg'
+          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
         >
-          <Plus className='h-4 w-4' />
+          <Plus className="h-4 w-4" />
           Nuevo Evento
         </button>
       </div>
 
       {error && !showForm && (
-        <div className='mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive'>
+        <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
           {error}
         </div>
       )}
 
-      <div className='mb-4 flex flex-col gap-3 md:flex-row md:items-center'>
-        <div className='relative flex-1'>
-          <Search className='absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground' />
+      <div className="mb-4 flex flex-col gap-3 md:flex-row md:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
           <input
-            type='text'
-            placeholder='Buscar por nombre…'
+            type="text"
+            placeholder="Buscar por nombre…"
             value={nameFilter}
-            onChange={(e) => setNameFilter(e.target.value)}
-            className='w-full rounded-lg border border-border bg-input pl-9 pr-3 py-2 text-sm'
+            onChange={(e) => {
+              setNameFilter(e.target.value);
+              setPage(1);
+            }}
+            className="w-full rounded-lg border border-border bg-input py-2 pl-9 pr-3 text-sm"
           />
         </div>
         <select
           value={categoryFilter}
-          onChange={(e) => setCategoryFilter(e.target.value)}
-          className='h-10 rounded-lg border border-border bg-input px-3 text-sm md:w-48'
+          onChange={(e) => {
+            setCategoryFilter(e.target.value);
+            setPage(1);
+          }}
+          className="h-10 rounded-lg border border-border bg-input px-3 text-sm md:w-48"
         >
-          <option value=''>Todas las categorías</option>
-          <option value='cine'>Cine</option>
-          <option value='teatro'>Teatro</option>
-          <option value='concierto'>Concierto</option>
-          <option value='popup'>Pop Up</option>
+          <option value="">Todas las categorías</option>
+          <option value="cine">Cine</option>
+          <option value="teatro">Teatro</option>
+          <option value="concierto">Concierto</option>
+          <option value="popup">Pop Up</option>
         </select>
-        <label className='flex items-center gap-2 text-sm text-foreground'>
+        <label className="flex items-center gap-2 text-sm text-foreground">
           <input
-            type='checkbox'
+            type="checkbox"
             checked={featuredOnly}
-            onChange={(e) => setFeaturedOnly(e.target.checked)}
-            className='h-4 w-4 rounded border-border'
+            onChange={(e) => {
+              setFeaturedOnly(e.target.checked);
+              setPage(1);
+            }}
+            className="h-4 w-4 rounded border-border"
           />
           Solo destacados
         </label>
@@ -299,261 +290,237 @@ export default function EventsPage() {
         open={showForm}
         onOpenChange={(open) => {
           if (!open) {
-            setShowForm(false)
-            setEditingId(null)
-            setFormData(EMPTY_FORM)
-            setError(null)
+            setShowForm(false);
+            setEditingId(null);
+            setFormData(EMPTY_FORM);
+            setError(null);
           }
         }}
       >
-        <DialogContent
-          ref={dialogContentRef}
-          className='max-w-2xl max-h-[85vh] overflow-y-auto'
-        >
+        <DialogContent ref={dialogContentRef} className="max-h-[85vh] max-w-2xl overflow-y-auto">
           <DialogHeader>
-            <DialogTitle className='font-display'>
-              {editingId ? 'Editar Evento' : 'Crear Evento'}
+            <DialogTitle className="font-display">
+              {editingId ? "Editar Evento" : "Crear Evento"}
             </DialogTitle>
             <DialogDescription>
               {editingId
-                ? 'Modifica los datos del evento.'
-                : 'Completa los datos para crear un nuevo evento.'}
+                ? "Modifica los datos del evento."
+                : "Completa los datos para crear un nuevo evento."}
             </DialogDescription>
           </DialogHeader>
 
           {error && (
-            <div className='mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive'>
+            <div className="mb-4 rounded-lg border border-destructive bg-destructive/10 p-4 text-sm text-destructive">
               {error}
             </div>
           )}
 
           <form onSubmit={handleSubmit}>
-            <div className='grid gap-4 md:grid-cols-2'>
+            <div className="grid gap-4 md:grid-cols-2">
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  SKU
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">SKU</label>
                 <input
-                  type='text'
-                  placeholder='SKU'
+                  type="text"
+                  placeholder="SKU"
                   value={formData.sku}
-                  onChange={(e) => set('sku', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("sku", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   disabled={!!editingId}
                   required={!editingId}
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Nombre
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Nombre</label>
                 <input
-                  type='text'
-                  placeholder='Nombre'
+                  type="text"
+                  placeholder="Nombre"
                   value={formData.name}
-                  onChange={(e) => set('name', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("name", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Descripción
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Descripción</label>
                 <input
-                  type='text'
-                  placeholder='Descripción'
+                  type="text"
+                  placeholder="Descripción"
                   value={formData.description}
-                  onChange={(e) => set('description', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("description", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
-              <div className='md:col-span-2'>
-                <label className='mb-1 block text-xs text-muted-foreground'>
+              <div className="md:col-span-2">
+                <label className="mb-1 block text-xs text-muted-foreground">
                   Descripción larga
                 </label>
                 <textarea
-                  placeholder='Descripción larga'
+                  placeholder="Descripción larga"
                   value={formData.longDescription}
-                  onChange={(e) => set('longDescription', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("longDescription", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   rows={3}
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Categoría
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Categoría</label>
                 <select
                   value={formData.category}
-                  onChange={(e) => set('category', e.target.value)}
-                  className='h-10 rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("category", e.target.value)}
+                  className="h-10 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 >
-                  <option value='cine'>Cine</option>
-                  <option value='teatro'>Teatro</option>
-                  <option value='concierto'>Concierto</option>
-                  <option value='popup'>Pop Up</option>
+                  <option value="cine">Cine</option>
+                  <option value="teatro">Teatro</option>
+                  <option value="concierto">Concierto</option>
+                  <option value="popup">Pop Up</option>
                 </select>
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Imagen
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Imagen</label>
                 <input
-                  type='file'
-                  accept='image/*'
-                  onChange={(e) => set('image', e.target.files?.[0] ?? null)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => set("image", e.target.files?.[0] ?? null)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required={!editingId}
                   disabled={!!editingId}
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Fecha
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Fecha</label>
                 <input
-                  type='date'
+                  type="date"
                   value={formData.date}
-                  onChange={(e) => set('date', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("date", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Hora
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Hora</label>
                 <input
-                  type='time'
+                  type="time"
                   value={formData.time}
-                  onChange={(e) => set('time', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("time", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Venue
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Venue</label>
                 <input
-                  type='text'
-                  placeholder='Venue'
+                  type="text"
+                  placeholder="Venue"
                   value={formData.venue}
-                  onChange={(e) => set('venue', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("venue", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
-                  Ciudad
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Ciudad</label>
                 <input
-                  type='text'
-                  placeholder='Ciudad'
+                  type="text"
+                  placeholder="Ciudad"
                   value={formData.city}
-                  onChange={(e) => set('city', e.target.value)}
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  onChange={(e) => set("city", e.target.value)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
+                <label className="mb-1 block text-xs text-muted-foreground">
                   Precio (centavos)
                 </label>
                 <input
-                  type='number'
-                  placeholder='Precio en centavos'
-                  value={formData.priceInCents || ''}
-                  onChange={(e) =>
-                    set('priceInCents', parseInt(e.target.value) || 0)
-                  }
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  type="number"
+                  placeholder="Precio en centavos"
+                  value={formData.priceInCents || ""}
+                  onChange={(e) => set("priceInCents", parseInt(e.target.value) || 0)}
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
               </div>
               <div>
-                <label className='mb-1 block text-xs text-muted-foreground'>
+                <label className="mb-1 block text-xs text-muted-foreground">
                   Tickets disponibles (dejar vacío para no limitado)
                 </label>
                 <input
-                  type='number'
+                  type="number"
                   min={0}
-                  placeholder='Numero de tickets'
+                  placeholder="Numero de tickets"
                   value={formData.availableTickets}
                   onChange={(e) =>
                     set(
-                      'availableTickets',
-                      e.target.value === ''
-                        ? ''
-                        : parseInt(e.target.value) || 0,
+                      "availableTickets",
+                      e.target.value === "" ? "" : parseInt(e.target.value) || 0,
                     )
                   }
-                  className='rounded-lg border border-border bg-input px-3 py-2 text-sm w-full'
+                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                 />
               </div>
-              <label className='flex items-center gap-2 text-sm'>
+              <label className="flex items-center gap-2 text-sm">
                 <input
-                  type='checkbox'
+                  type="checkbox"
                   checked={formData.featured}
-                  onChange={(e) => set('featured', e.target.checked)}
-                  className='h-4 w-4 rounded border-border'
+                  onChange={(e) => set("featured", e.target.checked)}
+                  className="h-4 w-4 rounded border-border"
                 />
                 Evento destacado
               </label>
-              <label className='flex items-center gap-2 text-sm'>
+              <label className="flex items-center gap-2 text-sm">
                 <input
-                  type='checkbox'
+                  type="checkbox"
                   checked={formData.syncN1co}
                   disabled={!!editingId}
                   onChange={(e) => {
-                    set('syncN1co', e.target.checked)
-                    if (!e.target.checked) set('n1coProductId', '')
+                    set("syncN1co", e.target.checked);
+                    if (!e.target.checked) set("n1coProductId", "");
                   }}
-                  className='h-4 w-4 rounded border-border'
+                  className="h-4 w-4 rounded border-border"
                 />
                 Ya existe en N1co
               </label>
               {formData.syncN1co && (
-                <div className='flex flex-col gap-1 md:col-span-2'>
+                <div className="flex flex-col gap-1 md:col-span-2">
                   <input
-                    type='text'
-                    placeholder='N1co product id'
+                    type="text"
+                    placeholder="N1co product id"
                     value={formData.n1coProductId}
-                    onChange={(e) => set('n1coProductId', e.target.value)}
-                    className='rounded-lg border border-border bg-input px-3 py-2 text-sm'
+                    onChange={(e) => set("n1coProductId", e.target.value)}
+                    className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                     required
                     disabled={!!editingId}
                   />
-                  <p className='text-xs text-muted-foreground'>
-                    El N1co product id es el último segmento numérico en la URL del producto en N1co.
+                  <p className="text-xs text-muted-foreground">
+                    El N1co product id es el último segmento numérico en la URL del producto en
+                    N1co.
                   </p>
                 </div>
               )}
             </div>
 
-            <div className='mt-4 flex gap-2'>
+            <div className="mt-4 flex gap-2">
               <button
-                type='submit'
+                type="submit"
                 disabled={isPending}
-                className='flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg disabled:opacity-50'
+                className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg disabled:opacity-50"
               >
-                {isPending && <Loader className='h-4 w-4 animate-spin' />}
-                {editingId ? 'Actualizar' : 'Crear'}
+                {isPending && <Loader className="h-4 w-4 animate-spin" />}
+                {editingId ? "Actualizar" : "Crear"}
               </button>
               <button
-                type='button'
+                type="button"
                 onClick={() => {
-                  setShowForm(false)
-                  setEditingId(null)
-                  setFormData(EMPTY_FORM)
-                  setError(null)
+                  setShowForm(false);
+                  setEditingId(null);
+                  setFormData(EMPTY_FORM);
+                  setError(null);
                 }}
-                className='rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary'
+                className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary"
               >
                 Cancelar
               </button>
@@ -563,103 +530,83 @@ export default function EventsPage() {
       </Dialog>
 
       {loading ? (
-        <div className='flex items-center justify-center py-12'>
-          <Loader className='h-6 w-6 animate-spin text-primary' />
+        <div className="flex items-center justify-center py-12">
+          <Loader className="h-6 w-6 animate-spin text-primary" />
         </div>
       ) : (
-        <div className='overflow-x-auto rounded-lg border border-border shadow-sm'>
-          <table className='w-full'>
-            <thead className='bg-secondary/50'>
+        <div className="overflow-x-auto rounded-lg border border-border shadow-sm">
+          <table className="w-full">
+            <thead className="bg-secondary/50">
               <tr>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Imagen
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Nombre
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Categoría
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Fecha
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Precio
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Tickets
-                </th>
-                <th className='px-6 py-3 text-left text-sm font-bold text-foreground'>
-                  Acciones
-                </th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Imagen</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Nombre</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Categoría</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Fecha</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Precio</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Tickets</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Acciones</th>
               </tr>
             </thead>
             <tbody>
               {events.length === 0 ? (
                 <tr>
-                  <td
-                    colSpan={7}
-                    className='px-6 py-8 text-center text-muted-foreground'
-                  >
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
                     No hay eventos. Crea uno para empezar.
                   </td>
                 </tr>
               ) : (
                 events.map((event) => (
-                  <tr
-                    key={event.id}
-                    className='border-t border-border hover:bg-secondary/30'
-                  >
-                    <td className='px-6 py-4 text-sm'>
-                      <img
+                  <tr key={event.id} className="border-t border-border hover:bg-secondary/30">
+                    <td className="px-6 py-4 text-sm">
+                      <Image
                         src={event.image}
                         alt={event.name}
-                        className='h-10 w-10 rounded object-cover'
+                        width={40}
+                        height={40}
+                        className="h-10 w-10 rounded object-cover"
                       />
                     </td>
-                    <td className='px-6 py-4 text-sm font-medium text-foreground'>
-                      <span className='inline-flex items-center gap-1.5'>
+                    <td className="px-6 py-4 text-sm font-medium text-foreground">
+                      <span className="inline-flex items-center gap-1.5">
                         {event.featured && (
                           <Star
-                            className='h-4 w-4 fill-amber-400 text-amber-400'
-                            aria-label='Evento destacado'
+                            className="h-4 w-4 fill-amber-400 text-amber-400"
+                            aria-label="Evento destacado"
                           />
                         )}
                         {event.name}
                       </span>
                     </td>
-                    <td className='px-6 py-4 text-sm'>
-                      <span className='inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold text-primary capitalize'>
+                    <td className="px-6 py-4 text-sm">
+                      <span className="inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold capitalize text-primary">
                         {event.category}
                       </span>
                     </td>
-                    <td className='px-6 py-4 text-sm text-foreground'>
+                    <td className="px-6 py-4 text-sm text-foreground">
                       {event.date} {event.time}
                     </td>
-                    <td className='px-6 py-4 text-sm font-bold text-primary'>
+                    <td className="px-6 py-4 text-sm font-bold text-primary">
                       ${(event.priceInCents / 100).toFixed(2)}
                     </td>
-                    <td className='px-6 py-4 text-sm text-foreground'>
-                      {event.availableTickets === 0
-                        ? 'Ilimitado'
-                        : event.availableTickets}
+                    <td className="px-6 py-4 text-sm text-foreground">
+                      {event.availableTickets === 0 ? "Ilimitado" : event.availableTickets}
                     </td>
-                    <td className='px-6 py-4 text-sm'>
-                      <div className='flex gap-2'>
+                    <td className="px-6 py-4 text-sm">
+                      <div className="flex gap-2">
                         <button
-                          type='button'
+                          type="button"
                           onClick={() => handleEdit(event)}
-                          className='flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10'
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
                         >
-                          <Edit2 className='h-3 w-3' />
+                          <Edit2 className="h-3 w-3" />
                           Editar
                         </button>
                         <button
-                          type='button'
+                          type="button"
                           onClick={() => handleDelete(event.id)}
-                          className='flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10'
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10"
                         >
-                          <Trash2 className='h-3 w-3' />
+                          <Trash2 className="h-3 w-3" />
                           Eliminar
                         </button>
                       </div>
@@ -673,34 +620,32 @@ export default function EventsPage() {
       )}
 
       {!loading && totalPages > 1 && (
-        <Pagination className='mt-4'>
+        <Pagination className="mt-4">
           <PaginationContent>
             <PaginationItem>
               <PaginationPrevious
-                href='#'
+                href="#"
                 aria-disabled={page === 1}
-                className={
-                  page === 1 ? 'pointer-events-none opacity-50' : undefined
-                }
+                className={page === 1 ? "pointer-events-none opacity-50" : undefined}
                 onClick={(e) => {
-                  e.preventDefault()
-                  if (page > 1) setPage(page - 1)
+                  e.preventDefault();
+                  if (page > 1) setPage(page - 1);
                 }}
               />
             </PaginationItem>
             {getPageNumbers(page, totalPages).map((p, idx) =>
-              p === 'ellipsis' ? (
+              p === "ellipsis" ? (
                 <PaginationItem key={`ellipsis-${idx}`}>
                   <PaginationEllipsis />
                 </PaginationItem>
               ) : (
                 <PaginationItem key={p}>
                   <PaginationLink
-                    href='#'
+                    href="#"
                     isActive={p === page}
                     onClick={(e) => {
-                      e.preventDefault()
-                      if (p !== page) setPage(p)
+                      e.preventDefault();
+                      if (p !== page) setPage(p);
                     }}
                   >
                     {p}
@@ -710,16 +655,12 @@ export default function EventsPage() {
             )}
             <PaginationItem>
               <PaginationNext
-                href='#'
+                href="#"
                 aria-disabled={page === totalPages}
-                className={
-                  page === totalPages
-                    ? 'pointer-events-none opacity-50'
-                    : undefined
-                }
+                className={page === totalPages ? "pointer-events-none opacity-50" : undefined}
                 onClick={(e) => {
-                  e.preventDefault()
-                  if (page < totalPages) setPage(page + 1)
+                  e.preventDefault();
+                  if (page < totalPages) setPage(page + 1);
                 }}
               />
             </PaginationItem>
@@ -727,22 +668,19 @@ export default function EventsPage() {
         </Pagination>
       )}
     </div>
-  )
+  );
 }
 
-function getPageNumbers(
-  current: number,
-  total: number,
-): Array<number | 'ellipsis'> {
+function getPageNumbers(current: number, total: number): Array<number | "ellipsis"> {
   if (total <= 7) {
-    return Array.from({ length: total }, (_, i) => i + 1)
+    return Array.from({ length: total }, (_, i) => i + 1);
   }
-  const pages: Array<number | 'ellipsis'> = [1]
-  const start = Math.max(2, current - 1)
-  const end = Math.min(total - 1, current + 1)
-  if (start > 2) pages.push('ellipsis')
-  for (let i = start; i <= end; i++) pages.push(i)
-  if (end < total - 1) pages.push('ellipsis')
-  pages.push(total)
-  return pages
+  const pages: Array<number | "ellipsis"> = [1];
+  const start = Math.max(2, current - 1);
+  const end = Math.min(total - 1, current + 1);
+  if (start > 2) pages.push("ellipsis");
+  for (let i = start; i <= end; i++) pages.push(i);
+  if (end < total - 1) pages.push("ellipsis");
+  pages.push(total);
+  return pages;
 }
