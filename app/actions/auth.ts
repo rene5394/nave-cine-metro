@@ -4,16 +4,19 @@ import { z } from "zod";
 import bcrypt from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { setSessionCookie, deleteSession } from "@/lib/auth";
+import { Role } from "@/lib/generated/prisma/enums";
 
 const loginSchema = z.object({
   email: z.string().email("Correo electrónico inválido"),
   password: z.string().min(1, "La contraseña es requerida"),
 });
 
+export type LoginState = { success: false; error: string } | { success: true; role: Role };
+
 export async function login(
-  _prevState: { success: boolean; error?: string } | null,
+  _prevState: LoginState | null,
   formData: FormData,
-) {
+): Promise<LoginState> {
   const parsed = loginSchema.safeParse({
     email: formData.get("email"),
     password: formData.get("password"),
@@ -44,7 +47,7 @@ export async function login(
     role: user.role,
   });
 
-  return { success: true };
+  return { success: true, role: user.role };
 }
 
 export async function logout() {

@@ -5,12 +5,18 @@ const JWT_SECRET = new TextEncoder().encode(process.env.JWT_SECRET || "default-s
 
 const COOKIE_NAME = "session";
 
+function loginRedirect(request: NextRequest) {
+  const url = new URL("/login", request.url);
+  url.searchParams.set("from", request.nextUrl.pathname + request.nextUrl.search);
+  return NextResponse.redirect(url);
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(COOKIE_NAME)?.value;
 
   if (!token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return loginRedirect(request);
   }
 
   try {
@@ -27,10 +33,10 @@ export async function proxy(request: NextRequest) {
 
     return NextResponse.next();
   } catch {
-    return NextResponse.redirect(new URL("/login", request.url));
+    return loginRedirect(request);
   }
 }
 
 export const config = {
-  matcher: ["/admin/:path*", "/client/:path*"],
+  matcher: ["/admin", "/admin/:path*", "/client", "/client/:path*"],
 };
