@@ -33,7 +33,10 @@ export async function getEvents({
     ...(featured ? { featured: true } : {}),
   };
 
-  const [events, totalCount] = await prisma.$transaction([
+  // Two independent reads — no atomicity needed. Avoid $transaction so we
+  // don't pay the interactive-transaction cost on Prisma Postgres pooled
+  // connections (which often times out with P2028 on cold starts).
+  const [events, totalCount] = await Promise.all([
     prisma.event.findMany({
       where,
       orderBy: { createdAt: "desc" },
