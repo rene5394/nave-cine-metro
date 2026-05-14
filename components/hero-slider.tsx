@@ -3,13 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import Image from "next/image";
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
-import {
-  type TicketEvent,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-  formatPrice,
-  formatDate,
-} from "@/lib/events-shared";
+import { type TicketEvent, formatPrice, formatDate } from "@/lib/events-shared";
 import { useEventModal } from "@/lib/event-modal-context";
 
 interface HeroSliderProps {
@@ -61,9 +55,9 @@ export default function HeroSlider({ events }: HeroSliderProps) {
       <div className="relative z-10 flex h-full items-end">
         <div className="mx-auto w-full max-w-7xl px-4 pb-12 md:pb-16">
           <span
-            className={`mb-4 inline-block rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${CATEGORY_COLORS[event.category]}`}
+            className={`mb-4 inline-block rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${event.category.color}`}
           >
-            {CATEGORY_LABELS[event.category]}
+            {event.category.name}
           </span>
           <h1 className="mb-3 max-w-2xl text-balance font-display text-4xl font-bold leading-tight text-white drop-shadow-lg md:text-5xl lg:text-7xl">
             {event.name}

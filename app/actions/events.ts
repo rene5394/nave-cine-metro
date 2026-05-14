@@ -6,19 +6,17 @@ import { createProducts, updateProducts, getLatestProduct, type N1COProductSync 
 import { uploadImage, deleteImage } from "@/lib/s3";
 import path from "path";
 
-type EventCategory = "cine" | "teatro" | "concierto" | "popup";
-
 export async function getEvents({
   page = 1,
   pageSize = 10,
   name,
-  category,
+  categoryId,
   featured,
 }: {
   page?: number;
   pageSize?: number;
   name?: string;
-  category?: EventCategory;
+  categoryId?: string;
   featured?: boolean;
 } = {}) {
   const safePage = Math.max(1, Math.floor(page));
@@ -29,7 +27,7 @@ export async function getEvents({
     ...(name && name.trim()
       ? { name: { contains: name.trim(), mode: "insensitive" as const } }
       : {}),
-    ...(category ? { category } : {}),
+    ...(categoryId ? { categoryId } : {}),
     ...(featured ? { featured: true } : {}),
   };
 
@@ -39,6 +37,7 @@ export async function getEvents({
   const [events, totalCount] = await Promise.all([
     prisma.event.findMany({
       where,
+      include: { category: true },
       orderBy: { createdAt: "desc" },
       skip,
       take: safePageSize,
@@ -76,7 +75,7 @@ const eventFieldsSchema = z.object({
   name: z.string().min(1),
   description: z.string().min(1),
   longDescription: z.string().min(1),
-  category: z.enum(["cine", "teatro", "concierto", "popup"]),
+  categoryId: z.string().uuid("Categoría inválida"),
   date: z.string().min(1),
   time: z.string().min(1),
   venue: z.string().min(1),
@@ -89,7 +88,10 @@ const eventFieldsSchema = z.object({
 });
 
 function toN1COProduct(
-  event: Omit<z.infer<typeof eventFieldsSchema>, "syncN1co" | "n1coProductId"> & { image: string },
+  event: Omit<z.infer<typeof eventFieldsSchema>, "syncN1co" | "n1coProductId" | "categoryId"> & {
+    image: string;
+    categorySlug: string;
+  },
 ): N1COProductSync {
   return {
     sku: event.sku,
@@ -97,7 +99,7 @@ function toN1COProduct(
     description: event.description,
     ...(event.availableTickets > 0 ? { stock: event.availableTickets } : {}),
     price: event.priceInCents / 100,
-    collections: [event.category],
+    collections: [event.categorySlug],
     image: event.image,
     enable: true,
     salesChannel: ["PaymentLink"],
@@ -136,6 +138,9 @@ function formatPrismaError(error: unknown): Record<string, string[]> {
     if (code === "P2025") {
       return { form: ["El evento no existe o fue eliminado"] };
     }
+    if (code === "P2003") {
+      return { form: ["La categoría seleccionada no existe"] };
+    }
   }
   console.error("Unexpected Prisma error:", error);
   return { form: ["Ocurrió un error al guardar el evento. Intenta de nuevo."] };
@@ -161,6 +166,11 @@ export async function createEvent(formData: FormData) {
     return { error: parsed.error.flatten().fieldErrors };
   }
 
+  const category = await prisma.category.findUnique({ where: { id: parsed.data.categoryId } });
+  if (!category) {
+    return { error: { categoryId: ["La categoría seleccionada no existe"] } };
+  }
+
   const imageUrl = await uploadEventImage(imageFile, parsed.data.sku);
   const { syncN1co, n1coProductId, ...eventFields } = parsed.data;
   const eventData = {
@@ -178,7 +188,10 @@ export async function createEvent(formData: FormData) {
   }
 
   try {
-    await createProducts([toN1COProduct({ ...eventFields, image: imageUrl })]);
+    const { categoryId: _cid, ...rest } = eventFields;
+    await createProducts([
+      toN1COProduct({ ...rest, image: imageUrl, categorySlug: category.slug }),
+    ]);
 
     if (!event.n1coProductId) {
       const latest = await getLatestProduct();
@@ -203,6 +216,11 @@ export async function updateEvent(id: string, formData: FormData) {
   const parsed = eventFieldsSchema.safeParse(fields);
   if (!parsed.success) {
     return { error: parsed.error.flatten().fieldErrors };
+  }
+
+  const category = await prisma.category.findUnique({ where: { id: parsed.data.categoryId } });
+  if (!category) {
+    return { error: { categoryId: ["La categoría seleccionada no existe"] } };
   }
 
   const existing = await prisma.event.findUniqueOrThrow({ where: { id } });
@@ -231,7 +249,8 @@ export async function updateEvent(id: string, formData: FormData) {
     return { error: formatPrismaError(error) };
   }
 
-  const n1coProduct = toN1COProduct({ ...eventFields, image: imageUrl });
+  const { categoryId: _cid, ...rest } = eventFields;
+  const n1coProduct = toN1COProduct({ ...rest, image: imageUrl, categorySlug: category.slug });
   try {
     if (event.n1coProductId) {
       await updateProducts([n1coProduct]);

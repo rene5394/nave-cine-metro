@@ -4,6 +4,7 @@ import React, { useCallback, useState, useEffect, useRef, useTransition } from "
 import Image from "next/image";
 import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
 import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
+import { getCategories } from "@/app/actions/categories";
 import {
   Dialog,
   DialogContent,
@@ -21,13 +22,16 @@ import {
   PaginationPrevious,
 } from "@/components/ui/pagination";
 
+type Category = Awaited<ReturnType<typeof getCategories>>[number];
+
 type Event = {
   id: string;
   sku: string;
   name: string;
   description: string;
   longDescription: string;
-  category: string;
+  categoryId: string;
+  category: Category;
   image: string;
   date: string;
   time: string;
@@ -46,7 +50,7 @@ const EMPTY_FORM = {
   name: "",
   description: "",
   longDescription: "",
-  category: "cine",
+  categoryId: "",
   date: "",
   time: "",
   venue: "",
@@ -73,7 +77,16 @@ export default function EventsPage() {
   const [debouncedName, setDebouncedName] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [categories, setCategories] = useState<Category[]>([]);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    // Load categories for the filter and form selects (setState happens
+    // inside an async callback, not in the effect body).
+    getCategories()
+      .then(setCategories)
+      .catch(() => {});
+  }, []);
 
   useEffect(() => {
     const t = setTimeout(() => setDebouncedName(nameFilter), 300);
@@ -94,7 +107,7 @@ export default function EventsPage() {
           page: targetPage,
           pageSize: PAGE_SIZE,
           name: debouncedName || undefined,
-          category: (categoryFilter as "cine" | "teatro" | "concierto" | "popup" | "") || undefined,
+          categoryId: categoryFilter || undefined,
           featured: featuredOnly || undefined,
         });
         setEvents(result.events);
@@ -127,7 +140,7 @@ export default function EventsPage() {
     fd.set("name", formData.name);
     fd.set("description", formData.description);
     fd.set("longDescription", formData.longDescription);
-    fd.set("category", formData.category);
+    fd.set("categoryId", formData.categoryId);
     fd.set("date", formData.date);
     fd.set("time", formData.time);
     fd.set("venue", formData.venue);
@@ -196,7 +209,7 @@ export default function EventsPage() {
       name: event.name,
       description: event.description,
       longDescription: event.longDescription,
-      category: event.category,
+      categoryId: event.categoryId,
       date: event.date,
       time: event.time,
       venue: event.venue,
@@ -267,10 +280,11 @@ export default function EventsPage() {
           className="h-10 rounded-lg border border-border bg-input px-3 text-sm md:w-48"
         >
           <option value="">Todas las categorías</option>
-          <option value="cine">Cine</option>
-          <option value="teatro">Teatro</option>
-          <option value="concierto">Concierto</option>
-          <option value="popup">Pop Up</option>
+          {categories.map((c) => (
+            <option key={c.id} value={c.id}>
+              {c.name}
+            </option>
+          ))}
         </select>
         <label className="flex items-center gap-2 text-sm text-foreground">
           <input
@@ -367,15 +381,19 @@ export default function EventsPage() {
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Categoría</label>
                 <select
-                  value={formData.category}
-                  onChange={(e) => set("category", e.target.value)}
+                  value={formData.categoryId}
+                  onChange={(e) => set("categoryId", e.target.value)}
                   className="h-10 w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 >
-                  <option value="cine">Cine</option>
-                  <option value="teatro">Teatro</option>
-                  <option value="concierto">Concierto</option>
-                  <option value="popup">Pop Up</option>
+                  <option value="" disabled>
+                    Selecciona una categoría
+                  </option>
+                  {categories.map((c) => (
+                    <option key={c.id} value={c.id}>
+                      {c.name}
+                    </option>
+                  ))}
                 </select>
               </div>
               <div>
@@ -578,8 +596,10 @@ export default function EventsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
-                      <span className="inline-block rounded-full bg-primary/20 px-3 py-1 text-xs font-bold capitalize text-primary">
-                        {event.category}
+                      <span
+                        className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${event.category.color}`}
+                      >
+                        {event.category.name}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">

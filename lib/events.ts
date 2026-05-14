@@ -1,28 +1,33 @@
 import { prisma } from "@/lib/prisma";
-import type { EventCategory } from "@/lib/events-shared";
 
-export type { EventCategory };
-export {
-  type TicketEvent,
-  CATEGORY_LABELS,
-  CATEGORY_COLORS,
-  formatPrice,
-  formatDate,
-  formatShortDate,
-} from "@/lib/events-shared";
+export { type TicketEvent, formatPrice, formatDate, formatShortDate } from "@/lib/events-shared";
 
 export async function getEvents() {
-  return prisma.event.findMany({ orderBy: { date: "asc" } });
+  return prisma.event.findMany({
+    include: { category: true },
+    orderBy: { date: "asc" },
+  });
 }
 
 export async function getEventById(id: string) {
-  return prisma.event.findUnique({ where: { id } });
+  return prisma.event.findUnique({
+    where: { id },
+    include: { category: true },
+  });
 }
 
-export async function getEventsByCategory(category: EventCategory) {
-  return prisma.event.findMany({ where: { category }, orderBy: { date: "asc" } });
+export async function getEventsByCategory(slug: string) {
+  return prisma.event.findMany({
+    where: { category: { slug } },
+    include: { category: true },
+    orderBy: { date: "asc" },
+  });
 }
 
 export async function getFeaturedEvents() {
-  return prisma.event.findMany({ where: { featured: true }, orderBy: { date: "asc" } });
+  return prisma.event.findMany({
+    where: { featured: true },
+    include: { category: true },
+    orderBy: { date: "asc" },
+  });
 }

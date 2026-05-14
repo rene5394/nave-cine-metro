@@ -1,43 +1,34 @@
 "use client";
 
-import React from "react";
-
-import { CATEGORY_LABELS, type EventCategory } from "@/lib/events-shared";
-import { Film, Theater, Music, Sparkles, LayoutGrid } from "lucide-react";
-
-const CATEGORY_ICONS: Record<string, React.ReactNode> = {
-  all: <LayoutGrid className="h-4 w-4" />,
-  cine: <Film className="h-4 w-4" />,
-  teatro: <Theater className="h-4 w-4" />,
-  concierto: <Music className="h-4 w-4" />,
-  popup: <Sparkles className="h-4 w-4" />,
-};
+import { LayoutGrid, Tag } from "lucide-react";
 
 interface EventFiltersProps {
-  selected: EventCategory | "all";
-  onSelect: (category: EventCategory | "all") => void;
+  selected: string;
+  onSelect: (slug: string) => void;
+  categories: { slug: string; name: string }[];
 }
 
-export default function EventFilters({ selected, onSelect }: EventFiltersProps) {
-  const options: (EventCategory | "all")[] = ["all", "cine", "teatro", "concierto", "popup"];
+export default function EventFilters({ selected, onSelect, categories }: EventFiltersProps) {
+  const options = [{ slug: "all", name: "Todos" }, ...categories];
 
   return (
     <div className="flex flex-wrap gap-2">
       {options.map((cat) => {
-        const isActive = selected === cat;
+        const isActive = selected === cat.slug;
+        const Icon = cat.slug === "all" ? LayoutGrid : Tag;
         return (
           <button
-            key={cat}
+            key={cat.slug}
             type="button"
-            onClick={() => onSelect(cat)}
+            onClick={() => onSelect(cat.slug)}
             className={`flex items-center gap-2 rounded-lg border px-4 py-2.5 text-sm font-medium transition-all ${
               isActive
                 ? "border-primary bg-primary text-primary-foreground"
                 : "border-border bg-card text-muted-foreground hover:border-primary/30 hover:text-foreground"
             }`}
           >
-            {CATEGORY_ICONS[cat]}
-            {cat === "all" ? "Todos" : CATEGORY_LABELS[cat]}
+            <Icon className="h-4 w-4" />
+            {cat.name}
           </button>
         );
       })}

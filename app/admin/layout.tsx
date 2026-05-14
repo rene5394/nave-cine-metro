@@ -3,7 +3,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, LogOut, Package, User, Users } from "lucide-react";
+import { BarChart3, LogOut, Package, Tag, User, Users } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import {
   DropdownMenu,
@@ -15,6 +15,7 @@ import {
 const NAV_ITEMS = [
   { href: "/admin/panel-de-control", label: "Panel de Control", icon: BarChart3 },
   { href: "/admin/eventos", label: "Eventos", icon: Package },
+  { href: "/admin/categorias", label: "Categorías", icon: Tag },
   { href: "/admin/suscripciones", label: "Suscripciones", icon: Users },
 ];
 

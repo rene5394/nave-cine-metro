@@ -2,7 +2,7 @@
 
 import { useState, useMemo } from "react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { type EventCategory, type TicketEvent } from "@/lib/events-shared";
+import { type TicketEvent } from "@/lib/events-shared";
 import EventCard from "./event-card";
 import EventFilters from "./event-filters";
 
@@ -10,21 +10,22 @@ const ITEMS_PER_PAGE = 12;
 
 interface EventGridProps {
   events: TicketEvent[];
+  categories: { slug: string; name: string }[];
 }
 
-export default function EventGrid({ events }: EventGridProps) {
-  const [filter, setFilter] = useState<EventCategory | "all">("all");
+export default function EventGrid({ events, categories }: EventGridProps) {
+  const [filter, setFilter] = useState<string>("all");
   const [page, setPage] = useState(1);
 
   const filtered = useMemo(() => {
     if (filter === "all") return events;
-    return events.filter((e) => e.category === filter);
+    return events.filter((e) => e.category.slug === filter);
   }, [filter, events]);
 
   const totalPages = Math.ceil(filtered.length / ITEMS_PER_PAGE);
   const paginated = filtered.slice((page - 1) * ITEMS_PER_PAGE, page * ITEMS_PER_PAGE);
 
-  const handleFilterChange = (cat: EventCategory | "all") => {
+  const handleFilterChange = (cat: string) => {
     setFilter(cat);
     setPage(1);
   };
@@ -41,7 +42,7 @@ export default function EventGrid({ events }: EventGridProps) {
             {filtered.length !== 1 ? "s" : ""}
           </p>
         </div>
-        <EventFilters selected={filter} onSelect={handleFilterChange} />
+        <EventFilters selected={filter} onSelect={handleFilterChange} categories={categories} />
       </div>
 
       <div className="grid min-h-[900px] grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">

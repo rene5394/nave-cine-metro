@@ -12,17 +12,24 @@ enum Role {
   CLIENT
 }
 
-enum EventCategory {
-  cine
-  teatro
-  concierto
-  popup
-}
-
 enum OrderStatus {
   PENDING
   PAID
   CANCELLED
+}
+
+model Category {
+  id          String   @id @default(uuid()) @db.Uuid
+  slug        String   @unique
+  name        String
+  color       String
+  description String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  events Event[]
+
+  @@map("categories")
 }
 
 model User {
@@ -40,13 +47,14 @@ model User {
 }
 
 model Event {
-  id               String        @id @default(uuid()) @db.Uuid
-  n1coProductId    String?       @unique
-  sku              String        @unique
+  id               String   @id @default(uuid()) @db.Uuid
+  n1coProductId    String?  @unique
+  sku              String   @unique
   name             String
   description      String
   longDescription  String
-  category         EventCategory
+  categoryId       String   @db.Uuid
+  category         Category @relation(fields: [categoryId], references: [id])
   image            String
   date             String
   time             String
@@ -54,13 +62,13 @@ model Event {
   city             String
   priceInCents     Int
   availableTickets Int
-  featured         Boolean       @default(false)
-  createdAt        DateTime      @default(now())
-  updatedAt        DateTime      @updatedAt
+  featured         Boolean  @default(false)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
 
   orderItems OrderItem[]
 
-  @@index([category])
+  @@index([categoryId])
   @@index([date])
   @@index([featured])
   @@map("events")

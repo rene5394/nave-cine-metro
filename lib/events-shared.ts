@@ -1,22 +1,6 @@
-import type { Event as PrismaEvent, EventCategory } from "@/lib/generated/prisma/client";
+import type { Category, Event as PrismaEvent } from "@/lib/generated/prisma/client";
 
-export type { EventCategory };
-
-export type TicketEvent = PrismaEvent;
-
-export const CATEGORY_LABELS: Record<EventCategory, string> = {
-  cine: "Cine",
-  teatro: "Teatro",
-  concierto: "Concierto",
-  popup: "Pop Up",
-};
-
-export const CATEGORY_COLORS: Record<EventCategory, string> = {
-  cine: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-  teatro: "bg-rose-500/20 text-rose-400 border-rose-500/30",
-  concierto: "bg-sky-500/20 text-sky-400 border-sky-500/30",
-  popup: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-};
+export type TicketEvent = PrismaEvent & { category: Category };
 
 export function formatPrice(priceInCents: number): string {
   return new Intl.NumberFormat("en-US", {
