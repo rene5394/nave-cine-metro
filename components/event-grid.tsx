@@ -45,7 +45,7 @@ export default function EventGrid({ events, categories }: EventGridProps) {
         <EventFilters selected={filter} onSelect={handleFilterChange} categories={categories} />
       </div>
 
-      <div className="grid min-h-[900px] grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4">
         {paginated.map((event, i) => (
           <EventCard key={event.id} event={event} index={i} />
         ))}
