@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
+import { syncCollections, type N1COCollection } from "@/lib/n1co";
 
 const slugSchema = z
   .string()
@@ -32,6 +33,22 @@ function readCategoryForm(formData: FormData) {
   });
 }
 
+async function pushCollectionsToN1CO() {
+  try {
+    const all = await prisma.category.findMany();
+    const collections: N1COCollection[] = all.map((c) => ({
+      code: c.slug,
+      name: c.name,
+      description: c.description ?? "",
+      image: "",
+    }));
+    await syncCollections(collections);
+  } catch (e) {
+    // Non-blocking: local DB is the source of truth.
+    console.warn("N1CO collection sync failed:", e instanceof Error ? e.message : e);
+  }
+}
+
 export async function getCategories() {
   return prisma.category.findMany({ orderBy: { name: "asc" } });
 }
@@ -56,6 +73,7 @@ export async function createCategory(formData: FormData): Promise<CategoryResult
       description: parsed.data.description ?? null,
     },
   });
+  await pushCollectionsToN1CO();
   return { success: true };
 }
 
@@ -82,12 +100,14 @@ export async function updateCategory(id: string, formData: FormData): Promise<Ca
       description: parsed.data.description ?? null,
     },
   });
+  await pushCollectionsToN1CO();
   return { success: true };
 }
 
 export async function deleteCategory(id: string): Promise<CategoryResult> {
   try {
     await prisma.category.delete({ where: { id } });
+    await pushCollectionsToN1CO();
     return { success: true };
   } catch (e) {
     if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {

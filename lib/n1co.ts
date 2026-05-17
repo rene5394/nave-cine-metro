@@ -149,6 +149,14 @@ export async function createProducts(
 }
 
 /**
+ * Sync the full collections list to N1CO without touching products.
+ * Uses the same Products/Sync endpoint with an empty products array.
+ */
+export async function syncCollections(collections: N1COCollection[]) {
+  return createProducts([], collections);
+}
+
+/**
  * Update an existing N1CO product by productId.
  */
 export async function updateProducts(
