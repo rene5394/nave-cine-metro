@@ -15,10 +15,20 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import {
+  CATEGORY_COLOR_PRESETS,
+  DEFAULT_CATEGORY_COLOR,
+  categoryBadgeStyle,
+} from "@/lib/category-color";
 
 type Category = Awaited<ReturnType<typeof getCategories>>[number];
 
-const EMPTY_FORM = { slug: "", name: "", color: "", description: "" };
+const EMPTY_FORM: { slug: string; name: string; color: string; description: string } = {
+  slug: "",
+  name: "",
+  color: DEFAULT_CATEGORY_COLOR,
+  description: "",
+};
 
 export default function CategoriasPage() {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -167,7 +177,8 @@ export default function CategoriasPage() {
                   <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{cat.slug}</td>
                   <td className="px-6 py-4 text-sm">
                     <span
-                      className={`inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${cat.color}`}
+                      style={categoryBadgeStyle(cat.color)}
+                      className="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
                     >
                       {cat.name}
                     </span>
@@ -245,18 +256,47 @@ export default function CategoriasPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-sm font-medium">Color (clases Tailwind)</label>
-              <input
-                type="text"
-                value={formData.color}
-                onChange={(e) => setFormData({ ...formData, color: e.target.value })}
-                className="w-full rounded-lg border border-border bg-input px-3 py-2 font-mono text-sm"
-                placeholder="bg-amber-500/20 text-amber-700"
-                required
-              />
+              <label className="mb-1 block text-sm font-medium">Color</label>
+              <div className="flex flex-wrap items-center gap-2">
+                {CATEGORY_COLOR_PRESETS.map((preset) => {
+                  const selected = formData.color.toLowerCase() === preset.hex.toLowerCase();
+                  return (
+                    <button
+                      key={preset.hex}
+                      type="button"
+                      onClick={() => setFormData({ ...formData, color: preset.hex })}
+                      title={preset.name}
+                      aria-label={preset.name}
+                      className={`h-7 w-7 rounded-full border transition-all ${
+                        selected
+                          ? "ring-2 ring-foreground ring-offset-2"
+                          : "border-border hover:scale-110"
+                      }`}
+                      style={{ backgroundColor: preset.hex }}
+                    />
+                  );
+                })}
+                <label
+                  className="relative h-7 w-7 cursor-pointer overflow-hidden rounded-full border border-border transition-transform hover:scale-110"
+                  style={{
+                    background:
+                      "conic-gradient(from 0deg, #ef4444, #f59e0b, #eab308, #10b981, #06b6d4, #3b82f6, #8b5cf6, #ec4899, #ef4444)",
+                  }}
+                  title="Color personalizado"
+                  aria-label="Color personalizado"
+                >
+                  <input
+                    type="color"
+                    value={formData.color}
+                    onChange={(e) => setFormData({ ...formData, color: e.target.value })}
+                    className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                  />
+                </label>
+              </div>
               {formData.color && (
                 <span
-                  className={`mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium ${formData.color}`}
+                  style={categoryBadgeStyle(formData.color)}
+                  className="mt-2 inline-flex items-center rounded-full px-3 py-1 text-xs font-medium"
                 >
                   Vista previa
                 </span>

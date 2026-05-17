@@ -4,6 +4,7 @@ import { z } from "zod";
 import { prisma } from "@/lib/prisma";
 import { Prisma } from "@/lib/generated/prisma/client";
 import { syncCollections, type N1COCollection } from "@/lib/n1co";
+import { CATEGORY_COLOR_REGEX } from "@/lib/category-color";
 
 const slugSchema = z
   .string()
@@ -13,7 +14,7 @@ const slugSchema = z
 const categoryInputSchema = z.object({
   slug: slugSchema,
   name: z.string().min(1, "El nombre es requerido"),
-  color: z.string().min(1, "El color es requerido"),
+  color: z.string().regex(CATEGORY_COLOR_REGEX, "Color inválido"),
   description: z
     .string()
     .transform((v) => v.trim())

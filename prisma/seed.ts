@@ -15,27 +15,27 @@ const DEFAULT_CATEGORIES = [
   {
     slug: "publicaciones",
     name: "Publicaciones",
-    color: "bg-amber-500/20 text-amber-700",
+    color: "#f59e0b",
     description: null as string | null,
   },
   {
     slug: "talleres",
     name: "Talleres",
-    color: "bg-rose-500/20 text-rose-700",
+    color: "#f43f5e",
     description:
       "¡Inscríbete ahora en nuestros talleres artísticos! Sumérgete en un mundo de creatividad con expertos en el arte. Desarrolla tus habilidades, descubre nuevas técnicas y encuentra inspiración. Aprende y conecta con otros apasionados del arte. ¡Tu viaje artístico comienza aquí!",
   },
   {
     slug: "merch",
     name: "Merch",
-    color: "bg-sky-500/20 text-sky-700",
+    color: "#0ea5e9",
     description:
       "Explora nuestra tienda de ropa en línea, donde la moda se encuentra con el arte. Cada prenda es una expresión única, creada para apoyar y financiar proyectos artísticos. Descubre estilo con propósito, viste el arte y contribuye a cultivar la creatividad",
   },
   {
     slug: "teatro",
     name: "Teatro",
-    color: "bg-emerald-500/20 text-emerald-700",
+    color: "#10b981",
     description:
       "Experimenta la magia del teatro con nuestro exclusivo ticket de entrada. Compra tu pase online para disfrutar de una noche inolvidable de actuaciones cautivadoras. ¡Reserva ahora y asegura tu lugar en el espectáculo!",
   },

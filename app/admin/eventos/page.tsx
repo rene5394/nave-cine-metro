@@ -5,6 +5,7 @@ import Image from "next/image";
 import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
 import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
 import { getCategories } from "@/app/actions/categories";
+import { categoryBadgeStyle } from "@/lib/category-color";
 import {
   Dialog,
   DialogContent,
@@ -597,7 +598,8 @@ export default function EventsPage() {
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <span
-                        className={`inline-block rounded-full px-3 py-1 text-xs font-medium ${event.category.color}`}
+                        style={categoryBadgeStyle(event.category.color)}
+                        className="inline-block rounded-full px-3 py-1 text-xs font-medium"
                       >
                         {event.category.name}
                       </span>

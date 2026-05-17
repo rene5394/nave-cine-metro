@@ -5,6 +5,7 @@ import Image from "next/image";
 import { ChevronLeft, ChevronRight, Calendar, MapPin } from "lucide-react";
 import { type TicketEvent, formatPrice, formatDate } from "@/lib/events-shared";
 import { useEventModal } from "@/lib/event-modal-context";
+import { categoryBadgeStyle } from "@/lib/category-color";
 
 interface HeroSliderProps {
   events: TicketEvent[];
@@ -55,7 +56,8 @@ export default function HeroSlider({ events }: HeroSliderProps) {
       <div className="relative z-10 flex h-full items-end">
         <div className="mx-auto w-full max-w-7xl px-4 pb-12 md:pb-16">
           <span
-            className={`mb-4 inline-block rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider ${event.category.color}`}
+            style={categoryBadgeStyle(event.category.color)}
+            className="mb-4 inline-block rounded-full border px-3 py-1 text-xs font-semibold uppercase tracking-wider"
           >
             {event.category.name}
           </span>
