@@ -1,9 +1,8 @@
 "use client";
 
-import Image from "next/image";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, LogOut, Package, Tag, User, Users } from "lucide-react";
+import { BarChart3, LogOut, Package, Tag, Ticket, User, Users } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import {
   DropdownMenu,
@@ -37,18 +36,12 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
         style={{ backgroundColor: "#333333" }}
       >
         <div className="mx-auto flex max-w-7xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-3">
-            <Image
-              src="/logo-nave.svg"
-              alt="EntradasYA"
-              width={40}
-              height={40}
-              className="h-10 w-auto"
-            />
-            <span className="hidden font-display text-xl font-bold text-white sm:inline">
-              EntradasYA Admin
+          <Link href="/admin/panel-de-control" className="flex items-center gap-2">
+            <Ticket className="h-6 w-6 text-primary" />
+            <span className="font-display text-xl font-bold tracking-tight text-white">
+              EntradasYa Admin
             </span>
-          </div>
+          </Link>
           <div className="flex items-center gap-3">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
