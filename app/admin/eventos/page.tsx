@@ -6,6 +6,7 @@ import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
 import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
 import { getCategories } from "@/app/actions/categories";
 import { categoryBadgeStyle } from "@/lib/category-color";
+import { formatPrice } from "@/lib/events-shared";
 import {
   Dialog,
   DialogContent,
@@ -71,6 +72,7 @@ export default function EventsPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [priceInput, setPriceInput] = useState("");
   const [isPending, startTransition] = useTransition();
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
@@ -182,6 +184,7 @@ export default function EventsPage() {
         setPage(1);
       }
       setFormData(EMPTY_FORM);
+      setPriceInput("");
       setEditingId(null);
       setShowForm(false);
     });
@@ -222,6 +225,7 @@ export default function EventsPage() {
       syncN1co: !!event.n1coProductId,
       n1coProductId: event.n1coProductId ?? "",
     });
+    setPriceInput((event.priceInCents / 100).toFixed(2));
     setEditingId(event.id);
     setError(null);
     setShowForm(true);
@@ -242,6 +246,7 @@ export default function EventsPage() {
           onClick={() => {
             setEditingId(null);
             setFormData(EMPTY_FORM);
+            setPriceInput("");
             setError(null);
             setShowForm(!showForm);
           }}
@@ -308,6 +313,7 @@ export default function EventsPage() {
             setShowForm(false);
             setEditingId(null);
             setFormData(EMPTY_FORM);
+            setPriceInput("");
             setError(null);
           }
         }}
@@ -451,14 +457,19 @@ export default function EventsPage() {
                 />
               </div>
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  Precio (centavos)
-                </label>
+                <label className="mb-1 block text-xs text-muted-foreground">Precio (USD)</label>
                 <input
                   type="number"
-                  placeholder="Precio en centavos"
-                  value={formData.priceInCents || ""}
-                  onChange={(e) => set("priceInCents", parseInt(e.target.value) || 0)}
+                  step="0.01"
+                  min="0"
+                  placeholder="0.00"
+                  value={priceInput}
+                  onChange={(e) => {
+                    const raw = e.target.value;
+                    setPriceInput(raw);
+                    const parsed = parseFloat(raw);
+                    set("priceInCents", Number.isFinite(parsed) ? Math.round(parsed * 100) : 0);
+                  }}
                   className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
                   required
                 />
@@ -537,6 +548,7 @@ export default function EventsPage() {
                   setShowForm(false);
                   setEditingId(null);
                   setFormData(EMPTY_FORM);
+                  setPriceInput("");
                   setError(null);
                 }}
                 className="rounded-lg border border-border px-4 py-2 text-sm font-bold text-foreground transition-all hover:bg-secondary"
@@ -608,7 +620,7 @@ export default function EventsPage() {
                       {event.date} {event.time}
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-primary">
-                      ${(event.priceInCents / 100).toFixed(2)}
+                      {formatPrice(event.priceInCents)}
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">
                       {event.availableTickets === 0 ? "Ilimitado" : event.availableTickets}
