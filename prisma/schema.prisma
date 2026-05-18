@@ -47,31 +47,48 @@ model User {
 }
 
 model Event {
-  id               String   @id @default(uuid()) @db.Uuid
-  n1coProductId    String?  @unique
-  sku              String   @unique
-  name             String
-  description      String
-  longDescription  String
-  categoryId       String   @db.Uuid
-  category         Category @relation(fields: [categoryId], references: [id])
-  image            String
-  date             String
-  time             String
-  venue            String
-  city             String
-  priceInCents     Int
-  availableTickets Int
-  featured         Boolean  @default(false)
-  createdAt        DateTime @default(now())
-  updatedAt        DateTime @updatedAt
+  id              String   @id @default(uuid()) @db.Uuid
+  n1coProductId   String?  @unique
+  sku             String   @unique
+  name            String
+  description     String
+  longDescription String
+  categoryId      String   @db.Uuid
+  category        Category @relation(fields: [categoryId], references: [id])
+  image           String
+  date            String
+  time            String
+  venue           String
+  city            String
+  priceInCents    Int
+  featured        Boolean  @default(false)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
 
   orderItems OrderItem[]
+  screenings Screening[]
 
   @@index([categoryId])
   @@index([date])
   @@index([featured])
   @@map("events")
+}
+
+model Screening {
+  id               String   @id @default(uuid()) @db.Uuid
+  eventId          String   @db.Uuid
+  event            Event    @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  date             String
+  time             String
+  availableTickets Int
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  orderItems OrderItem[]
+
+  @@index([eventId])
+  @@index([date])
+  @@map("screenings")
 }
 
 model Order {
@@ -93,15 +110,18 @@ model Order {
 }
 
 model OrderItem {
-  id           String @id @default(uuid()) @db.Uuid
-  orderId      String @db.Uuid
-  order        Order  @relation(fields: [orderId], references: [id])
-  eventId      String @db.Uuid
-  event        Event  @relation(fields: [eventId], references: [id])
+  id           String     @id @default(uuid()) @db.Uuid
+  orderId      String     @db.Uuid
+  order        Order      @relation(fields: [orderId], references: [id])
+  eventId      String     @db.Uuid
+  event        Event      @relation(fields: [eventId], references: [id])
+  screeningId  String?    @db.Uuid
+  screening    Screening? @relation(fields: [screeningId], references: [id])
   quantity     Int
   priceInCents Int
 
-  @@unique([orderId, eventId])
+  @@unique([orderId, eventId, screeningId])
   @@index([eventId])
+  @@index([screeningId])
   @@map("order_items")
 }

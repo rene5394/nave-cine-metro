@@ -60,7 +60,9 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
               <div className="rounded-xl border border-sky-500/20 bg-card p-4 text-center">
                 <Music className="mx-auto mb-1.5 h-5 w-5 text-sky-400" />
                 <p className="text-[10px] text-muted-foreground">Disponibles</p>
-                <p className="text-xs font-bold text-foreground">{event.availableTickets}</p>
+                <p className="text-xs font-bold text-foreground">
+                  {event.screenings.reduce((n, s) => n + s.availableTickets, 0)}
+                </p>
               </div>
             </div>
 

@@ -5,26 +5,40 @@ import { createCheckoutLink, getCheckoutOrder } from "@/lib/n1co";
 
 interface CartLineItem {
   eventId: string;
+  screeningId: string;
   quantity: number;
 }
 
 const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "http://localhost:3000";
 
 export async function startCheckout(cartItems: CartLineItem[]) {
-  const eventIds = cartItems.map((item) => item.eventId);
-  const events = await prisma.event.findMany({
-    where: { id: { in: eventIds } },
-  });
+  if (cartItems.length === 0) {
+    return { error: "El carrito está vacío" };
+  }
 
-  // Validate all events exist and have enough tickets
+  const eventIds = cartItems.map((item) => item.eventId);
+  const screeningIds = cartItems.map((item) => item.screeningId);
+
+  const [events, screenings] = await Promise.all([
+    prisma.event.findMany({ where: { id: { in: eventIds } } }),
+    prisma.screening.findMany({ where: { id: { in: screeningIds } } }),
+  ]);
+
+  // Validate all events + screenings exist and have enough tickets
   for (const item of cartItems) {
     const event = events.find((e) => e.id === item.eventId);
     if (!event) {
       return { error: `Evento no encontrado: ${item.eventId}` };
     }
-    if (event.availableTickets < item.quantity) {
+    const screening = screenings.find(
+      (s) => s.id === item.screeningId && s.eventId === item.eventId,
+    );
+    if (!screening) {
+      return { error: `Función no encontrada para "${event.name}"` };
+    }
+    if (screening.availableTickets < item.quantity) {
       return {
-        error: `No hay suficientes entradas para "${event.name}". Disponibles: ${event.availableTickets}`,
+        error: `No hay suficientes entradas para "${event.name}". Disponibles: ${screening.availableTickets}`,
       };
     }
   }
@@ -45,6 +59,7 @@ export async function startCheckout(cartItems: CartLineItem[]) {
           const event = events.find((e) => e.id === item.eventId)!;
           return {
             eventId: item.eventId,
+            screeningId: item.screeningId,
             quantity: item.quantity,
             priceInCents: event.priceInCents,
           };
@@ -53,9 +68,12 @@ export async function startCheckout(cartItems: CartLineItem[]) {
     },
   });
 
-  // Create N1co checkout link with SKU-based lineItems
+  const first = cartItems[0];
+  const firstEvent = events.find((e) => e.id === first.eventId)!;
+  const firstScreening = screenings.find((s) => s.id === first.screeningId)!;
+
   const checkoutLink = await createCheckoutLink({
-    orderName: "EntradasYa Order",
+    orderName: firstEvent.name,
     orderReference: order.id,
     lineItems: cartItems.map((item) => {
       const event = events.find((e) => e.id === item.eventId)!;
@@ -70,17 +88,20 @@ export async function startCheckout(cartItems: CartLineItem[]) {
         },
       };
     }),
+    metadata: [
+      { name: "date", value: firstScreening.date },
+      { name: "time", value: firstScreening.time },
+      { name: "venue", value: firstEvent.venue },
+    ],
     successUrl: `${BASE_URL}/payment-success?orderCode=PLACEHOLDER`,
     cancelUrl: `${BASE_URL}/checkout?cancelled=true`,
   });
 
-  // Update order with n1co orderCode
   await prisma.order.update({
     where: { id: order.id },
     data: { n1coSessionId: checkoutLink.orderCode },
   });
 
-  // Build the real successUrl with the orderCode
   const successUrl = `${BASE_URL}/payment-success?orderCode=${checkoutLink.orderCode}`;
 
   return {
@@ -106,17 +127,20 @@ export async function verifyPayment(orderCode: string) {
     (n1coOrder.orderStatus === "PAID" || n1coOrder.orderStatus === "FINALIZED") &&
     localOrder.status === "PENDING"
   ) {
-    // Update order to PAID and decrement available tickets
     await prisma.$transaction([
       prisma.order.update({
         where: { id: localOrder.id },
         data: { status: "PAID" },
       }),
-      ...localOrder.items.map((item) =>
-        prisma.event.update({
-          where: { id: item.eventId },
-          data: { availableTickets: { decrement: item.quantity } },
-        }),
+      ...localOrder.items.flatMap((item) =>
+        item.screeningId
+          ? [
+              prisma.screening.update({
+                where: { id: item.screeningId },
+                data: { availableTickets: { decrement: item.quantity } },
+              }),
+            ]
+          : [],
       ),
     ]);
     return { status: "PAID" as const, orderCode };

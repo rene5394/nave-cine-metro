@@ -91,7 +91,7 @@ export default function CartSidebar() {
             <div className="flex flex-col gap-3 p-5">
               {items.map((item) => (
                 <div
-                  key={item.event.id}
+                  key={`${item.event.id}-${item.screening.id}`}
                   className="flex gap-4 rounded-2xl border border-gray-200 bg-white p-4 shadow-sm"
                 >
                   {/* Image */}
@@ -115,7 +115,7 @@ export default function CartSidebar() {
                       </div>
                       <button
                         type="button"
-                        onClick={() => removeItem(item.event.id)}
+                        onClick={() => removeItem(item.event.id, item.screening.id)}
                         className="shrink-0 text-gray-400 transition-colors hover:text-red-500"
                         aria-label={`Eliminar ${item.event.name}`}
                       >
@@ -124,14 +124,16 @@ export default function CartSidebar() {
                     </div>
 
                     <p className="text-xs text-gray-500">
-                      {item.event.date} · {item.event.time}
+                      {item.screening.date} · {item.screening.time}
                     </p>
 
                     <div className="mt-auto flex items-center justify-between">
                       <div className="flex items-center gap-2">
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.event.id, item.quantity - 1)}
+                          onClick={() =>
+                            updateQuantity(item.event.id, item.screening.id, item.quantity - 1)
+                          }
                           style={{ backgroundColor: ACCENT }}
                           className="flex h-7 w-7 items-center justify-center rounded text-white transition-all hover:shadow-md"
                           aria-label="Reducir cantidad"
@@ -143,7 +145,9 @@ export default function CartSidebar() {
                         </span>
                         <button
                           type="button"
-                          onClick={() => updateQuantity(item.event.id, item.quantity + 1)}
+                          onClick={() =>
+                            updateQuantity(item.event.id, item.screening.id, item.quantity + 1)
+                          }
                           style={{ backgroundColor: ACCENT }}
                           className="flex h-7 w-7 items-center justify-center rounded text-white transition-all hover:shadow-md"
                           aria-label="Aumentar cantidad"

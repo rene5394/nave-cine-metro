@@ -1,6 +1,13 @@
-import type { Category, Event as PrismaEvent } from "@/lib/generated/prisma/client";
+import type {
+  Category,
+  Event as PrismaEvent,
+  Screening as PrismaScreening,
+} from "@/lib/generated/prisma/client";
 
-export type TicketEvent = PrismaEvent & { category: Category };
+export type TicketEvent = PrismaEvent & {
+  category: Category;
+  screenings: PrismaScreening[];
+};
 
 export function formatPrice(priceInCents: number): string {
   return new Intl.NumberFormat("en-US", {

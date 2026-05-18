@@ -32,6 +32,7 @@ export default function CheckoutPage() {
     try {
       const cartItems = items.map((item) => ({
         eventId: item.event.id,
+        screeningId: item.screening.id,
         quantity: item.quantity,
       }));
 
@@ -110,7 +111,7 @@ export default function CheckoutPage() {
           {/* Items */}
           <div className="divide-y divide-gray-100">
             {items.map((item) => (
-              <div key={item.event.id} className="flex gap-4 px-5 py-4">
+              <div key={`${item.event.id}-${item.screening.id}`} className="flex gap-4 px-5 py-4">
                 <div className="relative h-20 w-16 shrink-0 overflow-hidden rounded-xl bg-gray-200 shadow-sm">
                   <Image
                     src={item.event.image || "/placeholder.svg"}
@@ -127,7 +128,7 @@ export default function CheckoutPage() {
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
                       <Calendar className="h-3.5 w-3.5 shrink-0" />
                       <span>
-                        {formatShortDate(item.event.date)} · {item.event.time}
+                        {formatShortDate(item.screening.date)} · {item.screening.time}
                       </span>
                     </div>
                   </div>

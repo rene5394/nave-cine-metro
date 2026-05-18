@@ -26,6 +26,13 @@ import {
 
 type Category = Awaited<ReturnType<typeof getCategories>>[number];
 
+type ScreeningRow = {
+  id: string;
+  date: string;
+  time: string;
+  availableTickets: number;
+};
+
 type Event = {
   id: string;
   sku: string;
@@ -40,9 +47,16 @@ type Event = {
   venue: string;
   city: string;
   priceInCents: number;
-  availableTickets: number;
   featured: boolean;
   n1coProductId: string | null;
+  screenings: ScreeningRow[];
+};
+
+type ScreeningFormRow = {
+  id?: string;
+  date: string;
+  time: string;
+  availableTickets: number | "";
 };
 
 const PAGE_SIZE = 10;
@@ -58,11 +72,11 @@ const EMPTY_FORM = {
   venue: "",
   city: "",
   priceInCents: 0,
-  availableTickets: "" as number | "",
   featured: false,
   image: null as File | null,
   syncN1co: false,
   n1coProductId: "",
+  screenings: [] as ScreeningFormRow[],
 };
 
 export default function EventsPage() {
@@ -150,8 +164,15 @@ export default function EventsPage() {
     fd.set("city", formData.city);
     fd.set("priceInCents", String(formData.priceInCents));
     fd.set(
-      "availableTickets",
-      String(formData.availableTickets === "" ? 0 : formData.availableTickets),
+      "screenings",
+      JSON.stringify(
+        formData.screenings.map((s) => ({
+          ...(s.id ? { id: s.id } : {}),
+          date: s.date,
+          time: s.time,
+          availableTickets: s.availableTickets === "" ? 0 : s.availableTickets,
+        })),
+      ),
     );
     fd.set("featured", String(formData.featured));
     fd.set("syncN1co", String(formData.syncN1co));
@@ -219,11 +240,16 @@ export default function EventsPage() {
       venue: event.venue,
       city: event.city,
       priceInCents: event.priceInCents,
-      availableTickets: event.availableTickets === 0 ? "" : event.availableTickets,
       featured: event.featured,
       image: null,
       syncN1co: !!event.n1coProductId,
       n1coProductId: event.n1coProductId ?? "",
+      screenings: event.screenings.map((s) => ({
+        id: s.id,
+        date: s.date,
+        time: s.time,
+        availableTickets: s.availableTickets,
+      })),
     });
     setPriceInput((event.priceInCents / 100).toFixed(2));
     setEditingId(event.id);
@@ -474,24 +500,6 @@ export default function EventsPage() {
                   required
                 />
               </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">
-                  Tickets disponibles (dejar vacío para no limitado)
-                </label>
-                <input
-                  type="number"
-                  min={0}
-                  placeholder="Numero de tickets"
-                  value={formData.availableTickets}
-                  onChange={(e) =>
-                    set(
-                      "availableTickets",
-                      e.target.value === "" ? "" : parseInt(e.target.value) || 0,
-                    )
-                  }
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
-                />
-              </div>
               <label className="flex items-center gap-2 text-sm">
                 <input
                   type="checkbox"
@@ -529,6 +537,107 @@ export default function EventsPage() {
                     El N1co product id es el último segmento numérico en la URL del producto en
                     N1co.
                   </p>
+                </div>
+              )}
+            </div>
+
+            <div className="mt-6">
+              <div className="mb-2 flex items-center justify-between">
+                <h3 className="text-sm font-semibold text-foreground">Funciones</h3>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setFormData((prev) => ({
+                      ...prev,
+                      screenings: [
+                        ...prev.screenings,
+                        { date: "", time: "", availableTickets: "" },
+                      ],
+                    }))
+                  }
+                  className="flex items-center gap-1 rounded-lg border border-border px-3 py-1.5 text-xs font-semibold text-foreground transition-colors hover:bg-secondary"
+                >
+                  <Plus className="h-3 w-3" />
+                  Agregar función
+                </button>
+              </div>
+
+              {formData.screenings.length === 0 ? (
+                <p className="rounded-lg border border-dashed border-border px-3 py-4 text-center text-xs text-muted-foreground">
+                  Agrega al menos una función con fecha, hora y cupo de tickets.
+                </p>
+              ) : (
+                <div className="space-y-2">
+                  {formData.screenings.map((s, idx) => (
+                    <div
+                      key={s.id ?? `new-${idx}`}
+                      className="grid grid-cols-1 gap-2 rounded-lg border border-border p-3 md:grid-cols-[1fr_1fr_1fr_auto]"
+                    >
+                      <input
+                        type="date"
+                        value={s.date}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            screenings: prev.screenings.map((row, i) =>
+                              i === idx ? { ...row, date: e.target.value } : row,
+                            ),
+                          }))
+                        }
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
+                        required
+                      />
+                      <input
+                        type="time"
+                        value={s.time}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            screenings: prev.screenings.map((row, i) =>
+                              i === idx ? { ...row, time: e.target.value } : row,
+                            ),
+                          }))
+                        }
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
+                        required
+                      />
+                      <input
+                        type="number"
+                        min={0}
+                        placeholder="Tickets"
+                        value={s.availableTickets}
+                        onChange={(e) =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            screenings: prev.screenings.map((row, i) =>
+                              i === idx
+                                ? {
+                                    ...row,
+                                    availableTickets:
+                                      e.target.value === "" ? "" : parseInt(e.target.value) || 0,
+                                  }
+                                : row,
+                            ),
+                          }))
+                        }
+                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
+                        required
+                      />
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setFormData((prev) => ({
+                            ...prev,
+                            screenings: prev.screenings.filter((_, i) => i !== idx),
+                          }))
+                        }
+                        className="flex items-center justify-center rounded-lg px-2 py-2 text-destructive transition-colors hover:bg-destructive/10"
+                        aria-label="Eliminar función"
+                      >
+                        <Trash2 className="h-4 w-4" />
+                      </button>
+                    </div>
+                  ))}
                 </div>
               )}
             </div>
@@ -572,7 +681,7 @@ export default function EventsPage() {
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Imagen</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Nombre</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Categoría</th>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Fecha</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Funciones</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Precio</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Tickets</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Acciones</th>
@@ -617,13 +726,17 @@ export default function EventsPage() {
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">
-                      {event.date} {event.time}
+                      {event.screenings.length === 0
+                        ? "—"
+                        : event.screenings.length === 1
+                          ? `${event.screenings[0].date} ${event.screenings[0].time}`
+                          : `${event.screenings.length} funciones`}
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-primary">
                       {formatPrice(event.priceInCents)}
                     </td>
                     <td className="px-6 py-4 text-sm text-foreground">
-                      {event.availableTickets === 0 ? "Ilimitado" : event.availableTickets}
+                      {event.screenings.reduce((n, s) => n + s.availableTickets, 0)}
                     </td>
                     <td className="px-6 py-4 text-sm">
                       <div className="flex gap-2">

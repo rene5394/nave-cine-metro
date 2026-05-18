@@ -56,10 +56,19 @@ const EVENTS = [
     venue: "Teatro Metropolitan",
     city: "Ciudad de Mexico",
     priceInCents: 8500,
-    availableTickets: 45,
     featured: true,
   },
 ];
+
+const SCREENINGS_BY_SKU: Record<
+  string,
+  Array<{ date: string; time: string; availableTickets: number }>
+> = {
+  "000040": [
+    { date: "2026-05-25", time: "19:30", availableTickets: 45 },
+    { date: "2026-05-29", time: "21:00", availableTickets: 45 },
+  ],
+};
 
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
@@ -139,6 +148,19 @@ async function main() {
       update: {},
       create: { id: crypto.randomUUID(), ...rest, image, categoryId },
     });
+
+    const screenings = SCREENINGS_BY_SKU[event.sku] ?? [];
+    if (screenings.length) {
+      const eventRow = await prisma.event.findUnique({ where: { sku: event.sku } });
+      if (eventRow) {
+        const existing = await prisma.screening.count({ where: { eventId: eventRow.id } });
+        if (existing === 0) {
+          await prisma.screening.createMany({
+            data: screenings.map((s) => ({ eventId: eventRow.id, ...s })),
+          });
+        }
+      }
+    }
   }
   console.log(`Seeded ${EVENTS.length} events`);
 
@@ -153,12 +175,14 @@ async function main() {
 
   const n1coProducts: N1COProductSync[] = EVENTS.map((event) => {
     const image = imageUrlMap.get(event.image) ?? event.image;
+    const screenings = SCREENINGS_BY_SKU[event.sku] ?? [];
+    const stock = screenings.reduce((n, s) => n + s.availableTickets, 0);
     return {
       sku: event.sku,
       name: event.name,
       description: event.description,
       extraDescription: event.longDescription,
-      stock: event.availableTickets,
+      stock,
       price: event.priceInCents / 100,
       collections: [event.categorySlug],
       image,

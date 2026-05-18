@@ -28,6 +28,7 @@ export interface N1COCheckoutLinkParams {
   successUrl: string;
   cancelUrl: string;
   expirationMinutes?: number;
+  metadata?: Array<{ name: string; value: string }>;
 }
 
 export interface N1COCheckoutLinkResponse {
@@ -235,6 +236,7 @@ export async function createCheckoutLink(
       orderReference: params.orderReference,
       orderDescription: `Compra de ${params.lineItems.length} producto(s)`,
       lineItems: params.lineItems,
+      ...(params.metadata ? { metadata: params.metadata } : {}),
       successUrl: params.successUrl,
       cancelUrl: params.cancelUrl,
       expirationMinutes: params.expirationMinutes ?? 30,

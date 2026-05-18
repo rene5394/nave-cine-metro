@@ -89,7 +89,7 @@ export default function PopupDetail({ event }: PopupDetailProps) {
                       Capacidad
                     </p>
                     <p className="text-xs font-semibold text-foreground">
-                      {event.availableTickets} lugares
+                      {event.screenings.reduce((n, s) => n + s.availableTickets, 0)} lugares
                     </p>
                   </div>
                 </div>

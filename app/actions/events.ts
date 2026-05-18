@@ -37,7 +37,10 @@ export async function getEvents({
   const [events, totalCount] = await Promise.all([
     prisma.event.findMany({
       where,
-      include: { category: true },
+      include: {
+        category: true,
+        screenings: { orderBy: [{ date: "asc" }, { time: "asc" }] },
+      },
       orderBy: { createdAt: "desc" },
       skip,
       take: safePageSize,
@@ -70,6 +73,18 @@ export async function deleteEvent(id: string) {
 
 const stringBoolean = z.preprocess((v) => v === "true" || v === true, z.boolean());
 
+const screeningInputSchema = z.object({
+  id: z.string().uuid().optional(),
+  date: z.string().min(1),
+  time: z.string().min(1),
+  availableTickets: z.coerce.number().int().nonnegative(),
+});
+
+const screeningsField = z.preprocess(
+  (v) => (typeof v === "string" ? JSON.parse(v) : v),
+  z.array(screeningInputSchema).default([]),
+);
+
 const eventFieldsSchema = z.object({
   sku: z.string().min(1),
   name: z.string().min(1),
@@ -81,7 +96,7 @@ const eventFieldsSchema = z.object({
   venue: z.string().min(1),
   city: z.string().min(1),
   priceInCents: z.coerce.number().int().positive(),
-  availableTickets: z.coerce.number().int().nonnegative(),
+  screenings: screeningsField,
   featured: stringBoolean.default(false),
   syncN1co: stringBoolean.default(false),
   n1coProductId: z.string().optional().default(""),
@@ -93,11 +108,12 @@ function toN1COProduct(
     categorySlug: string;
   },
 ): N1COProductSync {
+  const stock = event.screenings.reduce((n, s) => n + s.availableTickets, 0);
   return {
     sku: event.sku,
     name: event.name,
     description: event.description,
-    ...(event.availableTickets > 0 ? { stock: event.availableTickets } : {}),
+    ...(stock > 0 ? { stock } : {}),
     price: event.priceInCents / 100,
     collections: [event.categorySlug],
     image: event.image,
@@ -172,16 +188,26 @@ export async function createEvent(formData: FormData) {
   }
 
   const imageUrl = await uploadEventImage(imageFile, parsed.data.sku);
-  const { syncN1co, n1coProductId, ...eventFields } = parsed.data;
+  const { syncN1co, n1coProductId, screenings, ...eventFields } = parsed.data;
   const eventData = {
     ...eventFields,
     image: imageUrl,
     n1coProductId: syncN1co && n1coProductId ? n1coProductId : null,
   };
 
-  let event;
+  let event: Awaited<ReturnType<typeof prisma.event.create>>;
   try {
     event = await prisma.event.create({ data: eventData });
+    if (screenings.length) {
+      await prisma.screening.createMany({
+        data: screenings.map((s) => ({
+          eventId: event.id,
+          date: s.date,
+          time: s.time,
+          availableTickets: s.availableTickets,
+        })),
+      });
+    }
   } catch (error) {
     await deleteImage(imageUrl).catch(() => {});
     return { error: formatPrismaError(error) };
@@ -190,7 +216,7 @@ export async function createEvent(formData: FormData) {
   try {
     const { categoryId: _cid, ...rest } = eventFields;
     await createProducts([
-      toN1COProduct({ ...rest, image: imageUrl, categorySlug: category.slug }),
+      toN1COProduct({ ...rest, screenings, image: imageUrl, categorySlug: category.slug }),
     ]);
 
     if (!event.n1coProductId) {
@@ -233,15 +259,35 @@ export async function updateEvent(id: string, formData: FormData) {
     imageUrl = existing.image;
   }
 
-  const { syncN1co, n1coProductId, ...eventFields } = parsed.data;
+  const { syncN1co, n1coProductId, screenings, ...eventFields } = parsed.data;
   const eventData = {
     ...eventFields,
     image: imageUrl,
     n1coProductId: syncN1co && n1coProductId ? n1coProductId : null,
   };
-  let event;
+  let event: Awaited<ReturnType<typeof prisma.event.update>>;
   try {
     event = await prisma.event.update({ where: { id }, data: eventData });
+
+    const incomingIds = screenings.filter((s) => s.id).map((s) => s.id!);
+    await prisma.screening.deleteMany({
+      where: {
+        eventId: id,
+        ...(incomingIds.length ? { id: { notIn: incomingIds } } : {}),
+      },
+    });
+    for (const s of screenings) {
+      if (s.id) {
+        await prisma.screening.update({
+          where: { id: s.id },
+          data: { date: s.date, time: s.time, availableTickets: s.availableTickets },
+        });
+      } else {
+        await prisma.screening.create({
+          data: { eventId: id, date: s.date, time: s.time, availableTickets: s.availableTickets },
+        });
+      }
+    }
   } catch (error) {
     if (imageFile && imageFile.size > 0 && imageUrl !== existing.image) {
       await deleteImage(imageUrl).catch(() => {});
@@ -250,7 +296,12 @@ export async function updateEvent(id: string, formData: FormData) {
   }
 
   const { categoryId: _cid, ...rest } = eventFields;
-  const n1coProduct = toN1COProduct({ ...rest, image: imageUrl, categorySlug: category.slug });
+  const n1coProduct = toN1COProduct({
+    ...rest,
+    screenings,
+    image: imageUrl,
+    categorySlug: category.slug,
+  });
   try {
     if (event.n1coProductId) {
       await updateProducts([n1coProduct]);

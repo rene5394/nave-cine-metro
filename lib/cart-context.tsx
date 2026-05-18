@@ -3,16 +3,23 @@
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
 import type { TicketEvent } from "./events";
 
+export interface CartScreening {
+  id: string;
+  date: string;
+  time: string;
+}
+
 export interface CartItem {
   event: TicketEvent;
+  screening: CartScreening;
   quantity: number;
 }
 
 interface CartContextType {
   items: CartItem[];
-  addItem: (event: TicketEvent, quantity?: number) => void;
-  removeItem: (eventId: string) => void;
-  updateQuantity: (eventId: string, quantity: number) => void;
+  addItem: (event: TicketEvent, screening: CartScreening, quantity?: number) => void;
+  removeItem: (eventId: string, screeningId: string) => void;
+  updateQuantity: (eventId: string, screeningId: string, quantity: number) => void;
   clearCart: () => void;
   totalItems: number;
   totalPriceInCents: number;
@@ -22,7 +29,11 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const CART_STORAGE_KEY = "entradasya-cart";
+const CART_STORAGE_KEY = "entradasya-cart-v2";
+
+function isSameLine(item: CartItem, eventId: string, screeningId: string) {
+  return item.event.id === eventId && item.screening.id === screeningId;
+}
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -47,30 +58,32 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [items]);
 
-  const addItem = useCallback((event: TicketEvent, quantity = 1) => {
+  const addItem = useCallback((event: TicketEvent, screening: CartScreening, quantity = 1) => {
     setItems((prev) => {
-      const existing = prev.find((item) => item.event.id === event.id);
+      const existing = prev.find((item) => isSameLine(item, event.id, screening.id));
       if (existing) {
         return prev.map((item) =>
-          item.event.id === event.id ? { ...item, quantity: item.quantity + quantity } : item,
+          isSameLine(item, event.id, screening.id)
+            ? { ...item, quantity: item.quantity + quantity }
+            : item,
         );
       }
-      return [...prev, { event, quantity }];
+      return [...prev, { event, screening, quantity }];
     });
     setIsCartOpen(true);
   }, []);
 
-  const removeItem = useCallback((eventId: string) => {
-    setItems((prev) => prev.filter((item) => item.event.id !== eventId));
+  const removeItem = useCallback((eventId: string, screeningId: string) => {
+    setItems((prev) => prev.filter((item) => !isSameLine(item, eventId, screeningId)));
   }, []);
 
-  const updateQuantity = useCallback((eventId: string, quantity: number) => {
+  const updateQuantity = useCallback((eventId: string, screeningId: string, quantity: number) => {
     if (quantity <= 0) {
-      setItems((prev) => prev.filter((item) => item.event.id !== eventId));
+      setItems((prev) => prev.filter((item) => !isSameLine(item, eventId, screeningId)));
       return;
     }
     setItems((prev) =>
-      prev.map((item) => (item.event.id === eventId ? { ...item, quantity } : item)),
+      prev.map((item) => (isSameLine(item, eventId, screeningId) ? { ...item, quantity } : item)),
     );
   }, []);
 

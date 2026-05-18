@@ -13,13 +13,16 @@ interface UnifiedDetailProps {
 
 export default function UnifiedDetail({ event }: UnifiedDetailProps) {
   const [quantity, setQuantity] = useState(1);
+  const [screeningId, setScreeningId] = useState<string>(event.screenings[0]?.id ?? "");
   const { addItem } = useCart();
   const { closeEvent } = useEventModal();
 
+  const selected = event.screenings.find((s) => s.id === screeningId) ?? null;
+  const maxTickets = selected?.availableTickets ?? 0;
+
   const handleAddToCart = () => {
-    for (let i = 0; i < quantity; i++) {
-      addItem(event);
-    }
+    if (!selected) return;
+    addItem(event, { id: selected.id, date: selected.date, time: selected.time }, quantity);
     closeEvent();
   };
 
@@ -68,23 +71,52 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
           <div className="space-y-6">
             {/* Información Section */}
             <div className="rounded-lg border border-gray-200 p-5">
-              <h3 className="mb-4 text-lg font-bold text-gray-900">Información</h3>
-              <div className="space-y-3">
-                <div className="flex items-start gap-3">
-                  <Calendar className="mt-0.5 h-5 w-5 text-gray-600" style={{ color: "#9e5656" }} />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700">Fecha</p>
-                    <p className="text-sm text-gray-900">{formatDate(event.date)}</p>
-                  </div>
+              <h3 className="mb-4 text-lg font-bold text-gray-900">Función</h3>
+              {event.screenings.length === 0 ? (
+                <p className="text-sm text-gray-600">No hay funciones disponibles.</p>
+              ) : (
+                <div className="space-y-3">
+                  <select
+                    value={screeningId}
+                    onChange={(e) => {
+                      setScreeningId(e.target.value);
+                      setQuantity(1);
+                    }}
+                    className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900"
+                  >
+                    {event.screenings.map((s) => (
+                      <option key={s.id} value={s.id}>
+                        {formatDate(s.date)} · {s.time}
+                        {s.availableTickets === 0 ? " (agotado)" : ""}
+                      </option>
+                    ))}
+                  </select>
+                  {selected && (
+                    <>
+                      <div className="flex items-start gap-3">
+                        <Calendar
+                          className="mt-0.5 h-5 w-5 text-gray-600"
+                          style={{ color: "#9e5656" }}
+                        />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">Fecha</p>
+                          <p className="text-sm text-gray-900">{formatDate(selected.date)}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-start gap-3">
+                        <Clock
+                          className="mt-0.5 h-5 w-5 text-gray-600"
+                          style={{ color: "#9e5656" }}
+                        />
+                        <div>
+                          <p className="text-sm font-semibold text-gray-700">Hora</p>
+                          <p className="text-sm text-gray-900">{selected.time}</p>
+                        </div>
+                      </div>
+                    </>
+                  )}
                 </div>
-                <div className="flex items-start gap-3">
-                  <Clock className="mt-0.5 h-5 w-5 text-gray-600" style={{ color: "#9e5656" }} />
-                  <div>
-                    <p className="text-sm font-semibold text-gray-700">Hora</p>
-                    <p className="text-sm text-gray-900">{event.time} PM</p>
-                  </div>
-                </div>
-              </div>
+              )}
             </div>
 
             {/* Sobre el Evento Section */}
@@ -114,7 +146,7 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
               <span className="w-12 text-center text-lg font-bold text-gray-900">{quantity}</span>
               <button
                 type="button"
-                onClick={() => setQuantity((q) => Math.min(event.availableTickets, q + 1))}
+                onClick={() => setQuantity((q) => Math.min(maxTickets || q, q + 1))}
                 style={{ backgroundColor: "#9e5656" }}
                 className="flex h-10 w-10 items-center justify-center rounded-lg text-white transition-all hover:shadow-lg"
                 aria-label="Aumentar cantidad"
@@ -127,8 +159,9 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
             <button
               type="button"
               onClick={handleAddToCart}
+              disabled={!selected || maxTickets === 0}
               style={{ backgroundColor: "#9e5656" }}
-              className="flex w-full items-center justify-center gap-3 rounded-lg px-6 py-4 text-base font-bold text-white transition-all hover:shadow-xl"
+              className="flex w-full items-center justify-center gap-3 rounded-lg px-6 py-4 text-base font-bold text-white transition-all hover:shadow-xl disabled:opacity-50"
             >
               <ShoppingCart className="h-5 w-5" />
               Agregar al carrito
