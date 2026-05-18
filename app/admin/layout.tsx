@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { BarChart3, LogOut, Package, Tag, Ticket, User, Users } from "lucide-react";
+import { BarChart3, LogOut, Package, Receipt, Tag, Ticket, User, Users } from "lucide-react";
 import { logout } from "@/app/actions/auth";
 import {
   DropdownMenu,
@@ -14,6 +14,7 @@ import {
 const NAV_ITEMS = [
   { href: "/admin/panel-de-control", label: "Panel de Control", icon: BarChart3 },
   { href: "/admin/eventos", label: "Eventos", icon: Package },
+  { href: "/admin/ordenes", label: "Órdenes", icon: Receipt },
   { href: "/admin/categorias", label: "Categorías", icon: Tag },
   { href: "/admin/suscripciones", label: "Suscripciones", icon: Users },
 ];
