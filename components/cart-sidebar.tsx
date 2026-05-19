@@ -4,7 +4,7 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { X, Minus, Plus, ShoppingCart, Trash2, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice } from "@/lib/events-shared";
+import { formatPrice, formatTime12h } from "@/lib/events-shared";
 
 const ACCENT = "#9e5656";
 
@@ -124,7 +124,7 @@ export default function CartSidebar() {
                     </div>
 
                     <p className="text-xs text-gray-500">
-                      {item.screening.date} · {item.screening.time}
+                      {item.screening.date} · {formatTime12h(item.screening.time)}
                     </p>
 
                     <div className="mt-auto flex items-center justify-between">

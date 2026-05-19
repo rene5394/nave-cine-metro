@@ -6,7 +6,7 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { AlertCircle, ArrowLeft, Calendar, Loader2, Lock, ShoppingBag, Ticket } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatPrice, formatShortDate } from "@/lib/events-shared";
+import { formatPrice, formatShortDate, formatTime12h } from "@/lib/events-shared";
 import { startCheckout } from "@/app/actions/checkout";
 
 const ACCENT = "#9e5656";
@@ -128,7 +128,8 @@ export default function CheckoutPage() {
                     <div className="mt-1 flex items-center gap-1.5 text-xs text-gray-500">
                       <Calendar className="h-3.5 w-3.5 shrink-0" />
                       <span>
-                        {formatShortDate(item.screening.date)} · {item.screening.time}
+                        {formatShortDate(item.screening.date)} ·{" "}
+                        {formatTime12h(item.screening.time)}
                       </span>
                     </div>
                   </div>

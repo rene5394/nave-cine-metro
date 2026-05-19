@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Calendar, Clock, Minus, Plus, ShoppingCart } from "lucide-react";
 import { useState } from "react";
-import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
 import { useCart } from "@/lib/cart-context";
 import { useEventModal } from "@/lib/event-modal-context";
 
@@ -86,7 +86,7 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
                   >
                     {event.screenings.map((s) => (
                       <option key={s.id} value={s.id}>
-                        {formatDate(s.date)} · {s.time}
+                        {formatDate(s.date)} · {formatTime12h(s.time)}
                         {s.availableTickets === 0 ? " (agotado)" : ""}
                       </option>
                     ))}
@@ -110,7 +110,7 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
                         />
                         <div>
                           <p className="text-sm font-semibold text-gray-700">Hora</p>
-                          <p className="text-sm text-gray-900">{selected.time}</p>
+                          <p className="text-sm text-gray-900">{formatTime12h(selected.time)}</p>
                         </div>
                       </div>
                     </>

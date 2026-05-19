@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Calendar, Clock, Theater } from "lucide-react";
-import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
 import AddToCartButton from "./add-to-cart-button";
 
 interface TeatroDetailProps {
@@ -90,7 +90,9 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground">Hora</p>
-                    <p className="text-sm font-medium text-foreground">{event.time} hrs</p>
+                    <p className="text-sm font-medium text-foreground">
+                      {formatTime12h(event.time)}
+                    </p>
                   </div>
                 </div>
               </div>

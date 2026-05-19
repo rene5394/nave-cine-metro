@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Calendar, Clock, Music, Zap } from "lucide-react";
-import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
 import AddToCartButton from "./add-to-cart-button";
 
 interface ConciertoDetailProps {
@@ -41,7 +41,7 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
             </span>
             <span className="flex items-center gap-1.5 text-sky-300">
               <Clock className="h-4 w-4" />
-              {event.time} hrs
+              {formatTime12h(event.time)}
             </span>
           </div>
         </div>

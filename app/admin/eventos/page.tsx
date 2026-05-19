@@ -6,7 +6,8 @@ import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
 import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
 import { getCategories } from "@/app/actions/categories";
 import { categoryBadgeStyle } from "@/lib/category-color";
-import { formatPrice } from "@/lib/events-shared";
+import { formatPrice, formatTime12h } from "@/lib/events-shared";
+import { TimePicker12h } from "@/components/admin/time-picker-12h";
 import {
   Dialog,
   DialogContent,
@@ -453,13 +454,7 @@ export default function EventsPage() {
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Hora</label>
-                <input
-                  type="time"
-                  value={formData.time}
-                  onChange={(e) => set("time", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
-                  required
-                />
+                <TimePicker12h value={formData.time} onChange={(v) => set("time", v)} required />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Venue</label>
@@ -589,18 +584,16 @@ export default function EventsPage() {
                         className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                         required
                       />
-                      <input
-                        type="time"
+                      <TimePicker12h
                         value={s.time}
-                        onChange={(e) =>
+                        onChange={(v) =>
                           setFormData((prev) => ({
                             ...prev,
                             screenings: prev.screenings.map((row, i) =>
-                              i === idx ? { ...row, time: e.target.value } : row,
+                              i === idx ? { ...row, time: v } : row,
                             ),
                           }))
                         }
-                        className="rounded-lg border border-border bg-input px-3 py-2 text-sm"
                         required
                       />
                       <input
@@ -731,7 +724,7 @@ export default function EventsPage() {
                       {event.screenings.length === 0
                         ? "—"
                         : event.screenings.length === 1
-                          ? `${event.screenings[0].date} ${event.screenings[0].time}`
+                          ? `${event.screenings[0].date} ${formatTime12h(event.screenings[0].time)}`
                           : `${event.screenings.length} funciones`}
                     </td>
                     <td className="px-6 py-4 text-sm font-bold text-primary">

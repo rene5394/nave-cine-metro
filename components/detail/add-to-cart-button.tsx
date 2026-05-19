@@ -3,7 +3,7 @@
 import { useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatDate, formatPrice, type TicketEvent } from "@/lib/events-shared";
+import { formatDate, formatPrice, formatTime12h, type TicketEvent } from "@/lib/events-shared";
 
 interface AddToCartButtonProps {
   event: TicketEvent;
@@ -50,7 +50,7 @@ export default function AddToCartButton({ event }: AddToCartButtonProps) {
           >
             {event.screenings.map((s) => (
               <option key={s.id} value={s.id}>
-                {formatDate(s.date)} · {s.time}
+                {formatDate(s.date)} · {formatTime12h(s.time)}
                 {s.availableTickets === 0 ? " (agotado)" : ""}
               </option>
             ))}

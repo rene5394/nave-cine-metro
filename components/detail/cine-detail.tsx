@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Calendar, Clock, Film } from "lucide-react";
-import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
 import AddToCartButton from "./add-to-cart-button";
 
 interface CineDetailProps {
@@ -62,7 +62,7 @@ export default function CineDetail({ event }: CineDetailProps) {
               </span>
               <span className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
                 <Clock className="h-4 w-4 text-amber-400" />
-                {event.time} hrs
+                {formatTime12h(event.time)}
               </span>
             </div>
 

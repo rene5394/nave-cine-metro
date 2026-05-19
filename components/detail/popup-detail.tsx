@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { Calendar, Clock, Sparkles, Users, Timer } from "lucide-react";
-import { type TicketEvent, formatDate } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
 import AddToCartButton from "./add-to-cart-button";
 
 interface PopupDetailProps {
@@ -79,7 +79,9 @@ export default function PopupDetail({ event }: PopupDetailProps) {
                     <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
                       Apertura
                     </p>
-                    <p className="text-xs font-semibold text-foreground">{event.time} hrs</p>
+                    <p className="text-xs font-semibold text-foreground">
+                      {formatTime12h(event.time)}
+                    </p>
                   </div>
                 </div>
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">

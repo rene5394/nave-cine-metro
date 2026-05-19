@@ -4,7 +4,7 @@ import { useCallback, useEffect, useState } from "react";
 import { Loader } from "lucide-react";
 import { getOrders } from "@/app/actions/orders";
 import { getEvents } from "@/app/actions/events";
-import { formatPrice } from "@/lib/events-shared";
+import { formatPrice, formatTime12h } from "@/lib/events-shared";
 import {
   Pagination,
   PaginationContent,
@@ -33,8 +33,9 @@ function formatDateTime(d: Date | string) {
     year: "numeric",
     month: "short",
     day: "numeric",
-    hour: "2-digit",
+    hour: "numeric",
     minute: "2-digit",
+    hour12: true,
   }).format(date);
 }
 
@@ -176,7 +177,7 @@ export default function OrdersPage() {
                               {it.screening && (
                                 <span className="text-muted-foreground">
                                   {" "}
-                                  · {it.screening.date} {it.screening.time}
+                                  · {it.screening.date} {formatTime12h(it.screening.time)}
                                 </span>
                               )}
                             </li>

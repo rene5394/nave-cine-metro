@@ -1,6 +1,12 @@
 import { prisma } from "@/lib/prisma";
 
-export { type TicketEvent, formatPrice, formatDate, formatShortDate } from "@/lib/events-shared";
+export {
+  type TicketEvent,
+  formatPrice,
+  formatDate,
+  formatShortDate,
+  formatTime12h,
+} from "@/lib/events-shared";
 
 const screeningsInclude = {
   category: true,
