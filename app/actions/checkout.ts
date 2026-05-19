@@ -89,6 +89,7 @@ export async function startCheckout(cartItems: CartLineItem[]) {
       };
     }),
     metadata: [
+      { name: "orderId", value: order.id },
       { name: "date", value: firstScreening.date },
       { name: "time", value: firstScreening.time },
       { name: "venue", value: firstEvent.venue },
