@@ -80,6 +80,7 @@ const EMPTY_FORM = {
 };
 
 export default function EventsPage() {
+  const today = new Date().toLocaleDateString("en-CA");
   const [events, setEvents] = useState<Event[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -576,6 +577,7 @@ export default function EventsPage() {
                       <input
                         type="date"
                         value={s.date}
+                        min={today}
                         onChange={(e) =>
                           setFormData((prev) => ({
                             ...prev,

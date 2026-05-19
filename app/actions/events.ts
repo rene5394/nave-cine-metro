@@ -187,6 +187,13 @@ export async function createEvent(formData: FormData) {
     return { error: { categoryId: ["La categoría seleccionada no existe"] } };
   }
 
+  const today = new Date().toLocaleDateString("en-CA");
+  for (const s of parsed.data.screenings) {
+    if (s.date < today) {
+      return { error: { screenings: ["La fecha de la función debe ser hoy o una fecha futura"] } };
+    }
+  }
+
   const imageUrl = await uploadEventImage(imageFile, parsed.data.sku);
   const { syncN1co, n1coProductId, screenings, ...eventFields } = parsed.data;
   const eventData = {
@@ -250,6 +257,19 @@ export async function updateEvent(id: string, formData: FormData) {
   }
 
   const existing = await prisma.event.findUniqueOrThrow({ where: { id } });
+
+  const today = new Date().toLocaleDateString("en-CA");
+  const existingScreenings = await prisma.screening.findMany({ where: { eventId: id } });
+  for (const s of parsed.data.screenings) {
+    if (s.date < today) {
+      const prior = s.id ? existingScreenings.find((e) => e.id === s.id) : null;
+      if (!prior || prior.date !== s.date) {
+        return {
+          error: { screenings: ["La fecha de la función debe ser hoy o una fecha futura"] },
+        };
+      }
+    }
+  }
 
   let imageUrl: string;
   if (imageFile && imageFile.size > 0) {
