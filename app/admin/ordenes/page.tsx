@@ -24,6 +24,7 @@ const PAGE_SIZE = 20;
 const STATUS_STYLES: Record<string, string> = {
   PENDING: "bg-amber-100 text-amber-800",
   PAID: "bg-emerald-100 text-emerald-800",
+  REDEEMED: "bg-blue-100 text-blue-800",
   CANCELLED: "bg-red-100 text-red-800",
 };
 

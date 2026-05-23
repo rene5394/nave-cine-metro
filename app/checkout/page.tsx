@@ -26,9 +26,8 @@ export default function CheckoutPage() {
   }
 
   async function handleCheckout() {
-    setLoading(true);
     setError(null);
-
+    setLoading(true);
     try {
       const cartItems = items.map((item) => ({
         eventId: item.event.id,

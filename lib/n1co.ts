@@ -43,6 +43,13 @@ export interface N1COOrderStatus {
   orderReference: string;
   orderStatus: "PENDING" | "PAID" | "CANCELLED" | "FINALIZED";
   total: number;
+  payment?: {
+    buyer?: {
+      name?: string;
+      email?: string;
+      phone?: string;
+    };
+  };
 }
 
 export interface N1COProduct {

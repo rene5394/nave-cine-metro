@@ -16,6 +16,12 @@ enum OrderStatus {
   PENDING
   PAID
   CANCELLED
+  REDEEMED
+}
+
+enum TicketStatus {
+  ISSUED
+  REDEEMED
 }
 
 model Category {
@@ -95,6 +101,7 @@ model Order {
   id              String      @id @default(uuid()) @db.Uuid
   userId          String?     @db.Uuid
   user            User?       @relation(fields: [userId], references: [id])
+  emailSentAt     DateTime?
   status          OrderStatus @default(PENDING)
   totalInCents    Int
   stripeSessionId String?     @unique
@@ -120,8 +127,24 @@ model OrderItem {
   quantity     Int
   priceInCents Int
 
+  tickets Ticket[]
+
   @@unique([orderId, eventId, screeningId])
   @@index([eventId])
   @@index([screeningId])
   @@map("order_items")
+}
+
+model Ticket {
+  id          String       @id @default(uuid()) @db.Uuid
+  orderItemId String       @db.Uuid
+  orderItem   OrderItem    @relation(fields: [orderItemId], references: [id], onDelete: Cascade)
+  token       String       @unique
+  status      TicketStatus @default(ISSUED)
+  redeemedAt  DateTime?
+  createdAt   DateTime     @default(now())
+
+  @@index([orderItemId])
+  @@index([status])
+  @@map("tickets")
 }
