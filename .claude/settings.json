@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm i *)",
+      "Bash(pnpm db:seed)",
+      "Bash(xargs cat)"
+    ]
+  }
+}
