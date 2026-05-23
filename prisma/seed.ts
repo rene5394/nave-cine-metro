@@ -58,17 +58,59 @@ const EVENTS = [
     priceInCents: 8500,
     featured: true,
   },
+  {
+    sku: "000041",
+    name: "La Casa de Bernarda Alba",
+    description:
+      "Una puesta en escena intima del clasico de Garcia Lorca sobre la represion y el deseo.",
+    longDescription:
+      "Bajo el luto impuesto por Bernarda tras la muerte de su segundo marido, sus cinco hijas viven encerradas en una casa donde el deseo, el poder y la rebeldia chocan en silencio. Esta produccion apuesta por una escenografia austera y una iluminacion en claroscuro para amplificar la tension dramatica del texto de Lorca. Una experiencia teatral imprescindible para los amantes del teatro espanol del siglo XX.",
+    categorySlug: "teatro",
+    image: "/events/teatro-02.jpg",
+    date: "2026-05-25",
+    time: "19:00",
+    venue: "Teatro Metropolitan",
+    city: "Ciudad de Mexico",
+    priceInCents: 7500,
+    featured: false,
+  },
 ];
+
+const DAILY_TIMES = ["16:00", "19:00", "21:30"];
+const TICKETS_PER_SCREENING = 45;
+
+const SCREENING_DATES_BY_SKU: Record<string, string[]> = {
+  "000040": [
+    "2026-05-25",
+    "2026-05-26",
+    "2026-05-27",
+    "2026-05-28",
+    "2026-05-29",
+    "2026-05-30",
+    "2026-05-31",
+  ],
+  "000041": [
+    "2026-05-25",
+    "2026-05-26",
+    "2026-05-27",
+    "2026-05-28",
+    "2026-05-29",
+    "2026-05-30",
+    "2026-05-31",
+  ],
+};
 
 const SCREENINGS_BY_SKU: Record<
   string,
   Array<{ date: string; time: string; availableTickets: number }>
-> = {
-  "000040": [
-    { date: "2026-05-25", time: "19:30", availableTickets: 45 },
-    { date: "2026-05-29", time: "21:00", availableTickets: 45 },
-  ],
-};
+> = Object.fromEntries(
+  Object.entries(SCREENING_DATES_BY_SKU).map(([sku, dates]) => [
+    sku,
+    dates.flatMap((date) =>
+      DAILY_TIMES.map((time) => ({ date, time, availableTickets: TICKETS_PER_SCREENING })),
+    ),
+  ]),
+);
 
 async function main() {
   const adminEmail = process.env.SEED_ADMIN_EMAIL;
