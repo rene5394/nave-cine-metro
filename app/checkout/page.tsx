@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -12,6 +12,14 @@ import { startCheckout } from "@/app/actions/checkout";
 const ACCENT = "#9e5656";
 
 export default function CheckoutPage() {
+  return (
+    <Suspense fallback={null}>
+      <CheckoutPageContent />
+    </Suspense>
+  );
+}
+
+function CheckoutPageContent() {
   const { items, totalItems, totalPriceInCents } = useCart();
   const router = useRouter();
   const searchParams = useSearchParams();
