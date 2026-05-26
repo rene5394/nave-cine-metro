@@ -74,26 +74,24 @@ const EVENTS = [
 
 const DAILY_TIMES = ["16:00", "19:00", "21:30"];
 const TICKETS_PER_SCREENING = 45;
+const DAYS_FROM_TODAY = 5;
+const SCREENING_DAYS = 7;
+
+function generateScreeningDates(): string[] {
+  const start = new Date();
+  start.setUTCDate(start.getUTCDate() + DAYS_FROM_TODAY);
+  const dates: string[] = [];
+  for (let i = 0; i < SCREENING_DAYS; i++) {
+    const d = new Date(start);
+    d.setUTCDate(start.getUTCDate() + i);
+    dates.push(d.toISOString().slice(0, 10));
+  }
+  return dates;
+}
 
 const SCREENING_DATES_BY_SKU: Record<string, string[]> = {
-  "000040": [
-    "2026-05-25",
-    "2026-05-26",
-    "2026-05-27",
-    "2026-05-28",
-    "2026-05-29",
-    "2026-05-30",
-    "2026-05-31",
-  ],
-  "000041": [
-    "2026-05-25",
-    "2026-05-26",
-    "2026-05-27",
-    "2026-05-28",
-    "2026-05-29",
-    "2026-05-30",
-    "2026-05-31",
-  ],
+  "000040": generateScreeningDates(),
+  "000041": generateScreeningDates(),
 };
 
 const SCREENINGS_BY_SKU: Record<
