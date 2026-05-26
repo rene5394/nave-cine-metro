@@ -117,18 +117,23 @@ async function main() {
     );
   }
 
-  // Seed default categories.
+  // Seed default categories. Force status back to ACTIVE so re-seeding
+  // restores any seeded category an admin may have deactivated or soft-deleted.
   for (const cat of DEFAULT_CATEGORIES) {
     await prisma.category.upsert({
       where: { slug: cat.slug },
-      update: {},
+      update: { status: "ACTIVE" },
       create: cat,
     });
   }
   console.log(`Seeded ${DEFAULT_CATEGORIES.length} categories`);
 
   // Build slug -> id map so events can attach to a category by slug.
-  const allCategories = await prisma.category.findMany();
+  // Soft-deleted categories are excluded — they should not back new events
+  // and should not appear in the N1CO collections sync below.
+  const allCategories = await prisma.category.findMany({
+    where: { status: { in: ["ACTIVE", "DEACTIVE"] } },
+  });
   const categoryIdBySlug = new Map(allCategories.map((c) => [c.slug, c.id]));
 
   // Seed admin user
@@ -181,7 +186,7 @@ async function main() {
     const { categorySlug: _slug, ...rest } = event;
     await prisma.event.upsert({
       where: { sku: event.sku },
-      update: {},
+      update: { status: "ACTIVE" },
       create: { id: crypto.randomUUID(), ...rest, image, categoryId },
     });
 

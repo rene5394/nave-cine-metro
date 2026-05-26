@@ -1,11 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useState, useTransition } from "react";
-import { Plus, Edit2, Trash2, Loader } from "lucide-react";
+import { Plus, Edit2, Trash2, Loader, Eye, EyeOff } from "lucide-react";
 import {
   createCategory,
   deleteCategory,
   getCategories,
+  setCategoryStatus,
   updateCategory,
 } from "@/app/actions/categories";
 import {
@@ -37,19 +38,20 @@ export default function CategoriasPage() {
   const [showForm, setShowForm] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [formData, setFormData] = useState(EMPTY_FORM);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [isPending, startTransition] = useTransition();
 
   const refresh = useCallback(async () => {
     setLoading(true);
     try {
-      const result = await getCategories();
+      const result = await getCategories({ includeInactive: includeInactive || undefined });
       setCategories(result);
     } catch {
       setError("Error al cargar categorías");
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [includeInactive]);
 
   useEffect(() => {
     // Data fetching effect: loads categories from backend on mount.
@@ -113,21 +115,43 @@ export default function CategoriasPage() {
     });
   };
 
+  const handleSetStatus = (id: string, status: "ACTIVE" | "DEACTIVE") => {
+    startTransition(async () => {
+      const result = await setCategoryStatus(id, status);
+      if (!result.success) {
+        setError(result.error);
+        return;
+      }
+      await refresh();
+    });
+  };
+
   return (
     <div>
-      <div className="mb-8 flex items-center justify-between">
+      <div className="mb-8 flex items-center justify-between gap-4">
         <div>
           <h2 className="font-display text-2xl font-bold text-foreground">Categorías</h2>
           <p className="text-muted-foreground">Administra las categorías de eventos</p>
         </div>
-        <button
-          type="button"
-          onClick={openCreate}
-          className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
-        >
-          <Plus className="h-4 w-4" />
-          Nueva Categoría
-        </button>
+        <div className="flex items-center gap-4">
+          <label className="flex items-center gap-2 text-sm text-foreground">
+            <input
+              type="checkbox"
+              checked={includeInactive}
+              onChange={(e) => setIncludeInactive(e.target.checked)}
+              className="h-4 w-4 rounded border-border"
+            />
+            Ver inactivas
+          </label>
+          <button
+            type="button"
+            onClick={openCreate}
+            className="flex items-center gap-2 rounded-lg bg-primary px-4 py-2 text-sm font-bold text-white transition-all hover:shadow-lg"
+          >
+            <Plus className="h-4 w-4" />
+            Nueva Categoría
+          </button>
+        </div>
       </div>
 
       {error && !showForm && (
@@ -172,8 +196,22 @@ export default function CategoriasPage() {
               </tr>
             ) : (
               categories.map((cat) => (
-                <tr key={cat.id} className="border-t border-border hover:bg-secondary/30">
-                  <td className="px-6 py-4 text-sm font-medium text-foreground">{cat.name}</td>
+                <tr
+                  key={cat.id}
+                  className={`border-t border-border hover:bg-secondary/30 ${
+                    cat.status === "DEACTIVE" ? "opacity-60" : ""
+                  }`}
+                >
+                  <td className="px-6 py-4 text-sm font-medium text-foreground">
+                    <span className="inline-flex items-center gap-1.5">
+                      {cat.name}
+                      {cat.status === "DEACTIVE" && (
+                        <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                          Inactiva
+                        </span>
+                      )}
+                    </span>
+                  </td>
                   <td className="px-6 py-4 font-mono text-sm text-muted-foreground">{cat.slug}</td>
                   <td className="px-6 py-4 text-sm">
                     <span
@@ -191,22 +229,46 @@ export default function CategoriasPage() {
                     )}
                   </td>
                   <td className="px-6 py-4 text-right">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(cat)}
-                      className="mr-4 inline-flex items-center gap-1 text-sm text-primary hover:underline"
-                    >
-                      <Edit2 className="h-4 w-4" />
-                      Editar
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(cat.id)}
-                      className="inline-flex items-center gap-1 text-sm text-destructive hover:underline"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                      Eliminar
-                    </button>
+                    <div className="flex justify-end gap-2">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(cat)}
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-primary transition-colors hover:bg-primary/10"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        Editar
+                      </button>
+                      {cat.status === "ACTIVE" ? (
+                        <button
+                          type="button"
+                          onClick={() => handleSetStatus(cat.id, "DEACTIVE")}
+                          disabled={isPending}
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted disabled:opacity-50"
+                        >
+                          <EyeOff className="h-3 w-3" />
+                          Desactivar
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => handleSetStatus(cat.id, "ACTIVE")}
+                          disabled={isPending}
+                          className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/10 disabled:opacity-50"
+                        >
+                          <Eye className="h-3 w-3" />
+                          Activar
+                        </button>
+                      )}
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(cat.id)}
+                        disabled={isPending}
+                        className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-destructive transition-colors hover:bg-destructive/10 disabled:opacity-50"
+                      >
+                        <Trash2 className="h-3 w-3" />
+                        Eliminar
+                      </button>
+                    </div>
                   </td>
                 </tr>
               ))

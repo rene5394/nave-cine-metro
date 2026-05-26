@@ -1,8 +1,9 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
-import { Prisma } from "@/lib/generated/prisma/client";
+import { CategoryStatus, EventStatus } from "@/lib/generated/prisma/enums";
 import { syncCollections, type N1COCollection } from "@/lib/n1co";
 import { CATEGORY_COLOR_REGEX } from "@/lib/category-color";
 
@@ -34,9 +35,18 @@ function readCategoryForm(formData: FormData) {
   });
 }
 
+function revalidateCategoryViews() {
+  revalidatePath("/");
+  revalidatePath("/admin/categorias");
+  revalidatePath("/admin/eventos");
+  revalidatePath("/admin/panel-de-control");
+}
+
 async function pushCollectionsToN1CO() {
   try {
-    const all = await prisma.category.findMany();
+    const all = await prisma.category.findMany({
+      where: { status: { in: [CategoryStatus.ACTIVE, CategoryStatus.DEACTIVE] } },
+    });
     const collections: N1COCollection[] = all.map((c) => ({
       code: c.slug,
       name: c.name,
@@ -50,8 +60,15 @@ async function pushCollectionsToN1CO() {
   }
 }
 
-export async function getCategories() {
-  return prisma.category.findMany({ orderBy: { name: "asc" } });
+export async function getCategories({ includeInactive }: { includeInactive?: boolean } = {}) {
+  return prisma.category.findMany({
+    where: {
+      status: includeInactive
+        ? { in: [CategoryStatus.ACTIVE, CategoryStatus.DEACTIVE] }
+        : CategoryStatus.ACTIVE,
+    },
+    orderBy: { name: "asc" },
+  });
 }
 
 export async function createCategory(formData: FormData): Promise<CategoryResult> {
@@ -75,6 +92,7 @@ export async function createCategory(formData: FormData): Promise<CategoryResult
     },
   });
   await pushCollectionsToN1CO();
+  revalidateCategoryViews();
   return { success: true };
 }
 
@@ -102,21 +120,63 @@ export async function updateCategory(id: string, formData: FormData): Promise<Ca
     },
   });
   await pushCollectionsToN1CO();
+  revalidateCategoryViews();
   return { success: true };
 }
 
 export async function deleteCategory(id: string): Promise<CategoryResult> {
-  try {
-    await prisma.category.delete({ where: { id } });
-    await pushCollectionsToN1CO();
-    return { success: true };
-  } catch (e) {
-    if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === "P2003") {
+  const activeEvents = await prisma.event.count({
+    where: { categoryId: id, status: EventStatus.ACTIVE },
+  });
+  if (activeEvents > 0) {
+    return {
+      success: false,
+      error: "No puedes eliminar una categoría con eventos activos",
+    };
+  }
+
+  await prisma.category.update({
+    where: { id },
+    data: { status: CategoryStatus.DELETED },
+  });
+  await pushCollectionsToN1CO();
+  revalidateCategoryViews();
+  return { success: true };
+}
+
+const setCategoryStatusSchema = z.object({
+  status: z.enum([CategoryStatus.ACTIVE, CategoryStatus.DEACTIVE]),
+});
+
+export async function setCategoryStatus(
+  id: string,
+  status: "ACTIVE" | "DEACTIVE",
+): Promise<CategoryResult> {
+  const parsed = setCategoryStatusSchema.safeParse({ status });
+  if (!parsed.success) return { success: false, error: "Estado inválido" };
+
+  if (parsed.data.status === CategoryStatus.DEACTIVE) {
+    const activeEvents = await prisma.event.count({
+      where: { categoryId: id, status: EventStatus.ACTIVE },
+    });
+    if (activeEvents > 0) {
       return {
         success: false,
-        error: "No puedes eliminar una categoría que tiene eventos asociados",
+        error: "No puedes desactivar una categoría con eventos activos",
       };
     }
-    throw e;
   }
+
+  try {
+    await prisma.category.update({
+      where: { id },
+      data: { status: parsed.data.status },
+    });
+  } catch {
+    return { success: false, error: "No se pudo actualizar el estado de la categoría" };
+  }
+
+  await pushCollectionsToN1CO();
+  revalidateCategoryViews();
+  return { success: true };
 }

@@ -30,17 +30,25 @@ enum EventStatus {
   DELETED
 }
 
+enum CategoryStatus {
+  ACTIVE
+  DEACTIVE
+  DELETED
+}
+
 model Category {
-  id          String   @id @default(uuid()) @db.Uuid
-  slug        String   @unique
+  id          String         @id @default(uuid()) @db.Uuid
+  slug        String         @unique
   name        String
   color       String
+  status      CategoryStatus @default(ACTIVE)
   description String?
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt   DateTime       @default(now())
+  updatedAt   DateTime       @updatedAt
 
   events Event[]
 
+  @@index([status])
   @@map("categories")
 }
 
