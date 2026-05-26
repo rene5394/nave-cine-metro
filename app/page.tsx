@@ -7,6 +7,8 @@ import CartSidebar from "@/components/cart-sidebar";
 import EventDetailModal from "@/components/event-detail-modal";
 import Footer from "@/components/footer";
 
+export const revalidate = 60;
+
 export default async function HomePage() {
   const [featured, events, categories] = await Promise.all([
     getFeaturedEvents(),

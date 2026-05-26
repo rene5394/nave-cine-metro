@@ -2,6 +2,8 @@ import Link from "next/link";
 import { BarChart3, Package, Users } from "lucide-react";
 import { getEventsStatusCounts } from "@/app/actions/events";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
   const { active, inactive } = await getEventsStatusCounts();
 
