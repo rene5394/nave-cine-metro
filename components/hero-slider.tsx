@@ -31,6 +31,7 @@ export default function HeroSlider({ events }: HeroSliderProps) {
   if (events.length === 0) return null;
 
   const event = events[current];
+  const firstScreening = event.screenings[0];
 
   return (
     <section className="relative h-[70vh] min-h-[500px] w-full overflow-hidden">
@@ -68,10 +69,12 @@ export default function HeroSlider({ events }: HeroSliderProps) {
             {event.description}
           </p>
           <div className="mb-6 flex flex-wrap items-center gap-4 text-sm text-white/80">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="h-4 w-4" />
-              {formatDate(event.date)}
-            </span>
+            {firstScreening && (
+              <span className="flex items-center gap-1.5">
+                <Calendar className="h-4 w-4" />
+                {formatDate(firstScreening.date)}
+              </span>
+            )}
             <span className="flex items-center gap-1.5">
               <MapPin className="h-4 w-4" />
               {event.venue}

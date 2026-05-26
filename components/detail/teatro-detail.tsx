@@ -10,6 +10,7 @@ interface TeatroDetailProps {
 }
 
 export default function TeatroDetail({ event }: TeatroDetailProps) {
+  const firstScreening = event.screenings[0];
   return (
     <div className="relative">
       {/* Elegant theater curtain-style header */}
@@ -74,28 +75,32 @@ export default function TeatroDetail({ event }: TeatroDetailProps) {
           {/* Sidebar ticket panel */}
           <div className="lg:w-72">
             <div className="rounded-2xl border border-rose-500/20 bg-card p-5">
-              <div className="mb-5 flex flex-col gap-3">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10">
-                    <Calendar className="h-4 w-4 text-rose-400" />
+              {firstScreening && (
+                <div className="mb-5 flex flex-col gap-3">
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10">
+                      <Calendar className="h-4 w-4 text-rose-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Fecha</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {formatDate(firstScreening.date)}
+                      </p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Fecha</p>
-                    <p className="text-sm font-medium text-foreground">{formatDate(event.date)}</p>
+                  <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                    <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10">
+                      <Clock className="h-4 w-4 text-rose-400" />
+                    </div>
+                    <div>
+                      <p className="text-xs text-muted-foreground">Hora</p>
+                      <p className="text-sm font-medium text-foreground">
+                        {formatTime12h(firstScreening.time)}
+                      </p>
+                    </div>
                   </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-rose-500/10">
-                    <Clock className="h-4 w-4 text-rose-400" />
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground">Hora</p>
-                    <p className="text-sm font-medium text-foreground">
-                      {formatTime12h(event.time)}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              )}
 
               <div className="border-t border-border pt-5">
                 <AddToCartButton event={event} />

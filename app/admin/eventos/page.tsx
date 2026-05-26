@@ -43,8 +43,6 @@ type Event = {
   categoryId: string;
   category: Category;
   image: string;
-  date: string;
-  time: string;
   venue: string;
   city: string;
   priceInCents: number;
@@ -68,8 +66,6 @@ const EMPTY_FORM = {
   description: "",
   longDescription: "",
   categoryId: "",
-  date: "",
-  time: "",
   venue: "",
   city: "",
   priceInCents: 0,
@@ -160,8 +156,6 @@ export default function EventsPage() {
     fd.set("description", formData.description);
     fd.set("longDescription", formData.longDescription);
     fd.set("categoryId", formData.categoryId);
-    fd.set("date", formData.date);
-    fd.set("time", formData.time);
     fd.set("venue", formData.venue);
     fd.set("city", formData.city);
     fd.set("priceInCents", String(formData.priceInCents));
@@ -237,8 +231,6 @@ export default function EventsPage() {
       description: event.description,
       longDescription: event.longDescription,
       categoryId: event.categoryId,
-      date: event.date,
-      time: event.time,
       venue: event.venue,
       city: event.city,
       priceInCents: event.priceInCents,
@@ -441,20 +433,6 @@ export default function EventsPage() {
                   required={!editingId}
                   disabled={!!editingId}
                 />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Fecha</label>
-                <input
-                  type="date"
-                  value={formData.date}
-                  onChange={(e) => set("date", e.target.value)}
-                  className="w-full rounded-lg border border-border bg-input px-3 py-2 text-sm"
-                  required
-                />
-              </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">Hora</label>
-                <TimePicker12h value={formData.time} onChange={(v) => set("time", v)} required />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">Venue</label>

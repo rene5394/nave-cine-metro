@@ -10,6 +10,7 @@ interface CineDetailProps {
 }
 
 export default function CineDetail({ event }: CineDetailProps) {
+  const firstScreening = event.screenings[0];
   return (
     <div className="relative">
       {/* Cinematic full-width backdrop */}
@@ -55,16 +56,18 @@ export default function CineDetail({ event }: CineDetailProps) {
               {event.name}
             </h1>
 
-            <div className="mb-5 flex flex-wrap gap-2">
-              <span className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
-                <Calendar className="h-4 w-4 text-amber-400" />
-                {formatDate(event.date)}
-              </span>
-              <span className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
-                <Clock className="h-4 w-4 text-amber-400" />
-                {formatTime12h(event.time)}
-              </span>
-            </div>
+            {firstScreening && (
+              <div className="mb-5 flex flex-wrap gap-2">
+                <span className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
+                  <Calendar className="h-4 w-4 text-amber-400" />
+                  {formatDate(firstScreening.date)}
+                </span>
+                <span className="flex items-center gap-1.5 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-muted-foreground">
+                  <Clock className="h-4 w-4 text-amber-400" />
+                  {formatTime12h(firstScreening.time)}
+                </span>
+              </div>
+            )}
 
             <div className="mb-6 rounded-xl border border-border bg-card p-5">
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wider text-amber-400">

@@ -12,6 +12,7 @@ interface EventCardProps {
 
 export default function EventCard({ event, index = 99 }: EventCardProps) {
   const { openEvent } = useEventModal();
+  const firstScreening = event.screenings[0];
 
   return (
     <div
@@ -39,10 +40,12 @@ export default function EventCard({ event, index = 99 }: EventCardProps) {
           <h3 className="mb-2 line-clamp-2 text-base font-bold leading-tight text-white">
             {event.name}
           </h3>
-          <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-300">
-            <Calendar className="h-3.5 w-3.5" />
-            <span>{formatShortDate(event.date)}</span>
-          </div>
+          {firstScreening && (
+            <div className="mb-3 flex items-center gap-1.5 text-xs text-gray-300">
+              <Calendar className="h-3.5 w-3.5" />
+              <span>{formatShortDate(firstScreening.date)}</span>
+            </div>
+          )}
           <div className="flex items-center justify-between">
             <span className="text-base font-bold text-white">
               {formatPrice(event.priceInCents)}

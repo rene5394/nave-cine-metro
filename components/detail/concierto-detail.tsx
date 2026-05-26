@@ -10,6 +10,7 @@ interface ConciertoDetailProps {
 }
 
 export default function ConciertoDetail({ event }: ConciertoDetailProps) {
+  const firstScreening = event.screenings[0];
   return (
     <div className="relative">
       {/* Full-bleed concert hero */}
@@ -34,16 +35,18 @@ export default function ConciertoDetail({ event }: ConciertoDetailProps) {
             {event.name}
           </h1>
 
-          <div className="flex flex-wrap items-center gap-3 text-sm">
-            <span className="flex items-center gap-1.5 text-sky-300">
-              <Calendar className="h-4 w-4" />
-              {formatDate(event.date)}
-            </span>
-            <span className="flex items-center gap-1.5 text-sky-300">
-              <Clock className="h-4 w-4" />
-              {formatTime12h(event.time)}
-            </span>
-          </div>
+          {firstScreening && (
+            <div className="flex flex-wrap items-center gap-3 text-sm">
+              <span className="flex items-center gap-1.5 text-sky-300">
+                <Calendar className="h-4 w-4" />
+                {formatDate(firstScreening.date)}
+              </span>
+              <span className="flex items-center gap-1.5 text-sky-300">
+                <Clock className="h-4 w-4" />
+                {formatTime12h(firstScreening.time)}
+              </span>
+            </div>
+          )}
         </div>
       </div>
 

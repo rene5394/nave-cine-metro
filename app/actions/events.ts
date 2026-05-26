@@ -91,8 +91,6 @@ const eventFieldsSchema = z.object({
   description: z.string().min(1),
   longDescription: z.string().min(1),
   categoryId: z.string().uuid("Categoría inválida"),
-  date: z.string().min(1),
-  time: z.string().min(1),
   venue: z.string().min(1),
   city: z.string().min(1),
   priceInCents: z.coerce.number().int().positive(),

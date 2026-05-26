@@ -16,7 +16,7 @@ const screeningsInclude = {
 export async function getEvents() {
   return prisma.event.findMany({
     include: screeningsInclude,
-    orderBy: { date: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 }
 
@@ -31,7 +31,7 @@ export async function getEventsByCategory(slug: string) {
   return prisma.event.findMany({
     where: { category: { slug } },
     include: screeningsInclude,
-    orderBy: { date: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 }
 
@@ -39,6 +39,6 @@ export async function getFeaturedEvents() {
   return prisma.event.findMany({
     where: { featured: true },
     include: screeningsInclude,
-    orderBy: { date: "asc" },
+    orderBy: { createdAt: "desc" },
   });
 }

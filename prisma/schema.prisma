@@ -62,8 +62,6 @@ model Event {
   categoryId      String   @db.Uuid
   category        Category @relation(fields: [categoryId], references: [id])
   image           String
-  date            String
-  time            String
   venue           String
   city            String
   priceInCents    Int
@@ -75,7 +73,6 @@ model Event {
   screenings Screening[]
 
   @@index([categoryId])
-  @@index([date])
   @@index([featured])
   @@map("events")
 }

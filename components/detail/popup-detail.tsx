@@ -10,6 +10,7 @@ interface PopupDetailProps {
 }
 
 export default function PopupDetail({ event }: PopupDetailProps) {
+  const firstScreening = event.screenings[0];
   return (
     <div className="relative">
       {/* Playful gradient top section */}
@@ -62,28 +63,32 @@ export default function PopupDetail({ event }: PopupDetailProps) {
 
               {/* Compact info tiles */}
               <div className="mb-5 grid grid-cols-2 gap-2">
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
-                  <Calendar className="h-4 w-4 shrink-0 text-emerald-400" />
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Fecha
-                    </p>
-                    <p className="text-xs font-semibold text-foreground">
-                      {formatDate(event.date)}
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
-                  <Clock className="h-4 w-4 shrink-0 text-emerald-400" />
-                  <div>
-                    <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
-                      Apertura
-                    </p>
-                    <p className="text-xs font-semibold text-foreground">
-                      {formatTime12h(event.time)}
-                    </p>
-                  </div>
-                </div>
+                {firstScreening && (
+                  <>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
+                      <Calendar className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Fecha
+                        </p>
+                        <p className="text-xs font-semibold text-foreground">
+                          {formatDate(firstScreening.date)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
+                      <Clock className="h-4 w-4 shrink-0 text-emerald-400" />
+                      <div>
+                        <p className="text-[10px] uppercase tracking-wider text-muted-foreground">
+                          Apertura
+                        </p>
+                        <p className="text-xs font-semibold text-foreground">
+                          {formatTime12h(firstScreening.time)}
+                        </p>
+                      </div>
+                    </div>
+                  </>
+                )}
                 <div className="flex items-center gap-2 rounded-xl border border-border bg-card p-2.5">
                   <Users className="h-4 w-4 shrink-0 text-emerald-400" />
                   <div>
