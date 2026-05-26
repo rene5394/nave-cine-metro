@@ -1,5 +1,7 @@
 "use client";
 
+import { useState } from "react";
+
 type TimePicker12hProps = {
   value: string;
   onChange: (value: string) => void;
@@ -32,19 +34,39 @@ function serialize(hour12: string, minute: string, period: "AM" | "PM" | ""): st
 }
 
 export function TimePicker12h({ value, onChange, required, className }: TimePicker12hProps) {
-  const { hour12, minute, period } = parse(value);
+  const [hour12, setHour12] = useState(() => parse(value).hour12);
+  const [minute, setMinute] = useState(() => parse(value).minute);
+  const [period, setPeriod] = useState<"AM" | "PM" | "">(() => parse(value).period);
+  const [lastValue, setLastValue] = useState(value);
+
+  // Adopt a new external value only if it doesn't already match our current
+  // serialization. Without this guard, partial selections (which serialize to
+  // "") would get clobbered back to empty on the next parent render.
+  if (value !== lastValue && value !== serialize(hour12, minute, period)) {
+    const parsed = parse(value);
+    setHour12(parsed.hour12);
+    setMinute(parsed.minute);
+    setPeriod(parsed.period);
+    setLastValue(value);
+  }
 
   const baseClass = className ?? "rounded-lg border border-border bg-input px-2 py-2 text-sm";
 
-  const update = (next: { hour12?: string; minute?: string; period?: "AM" | "PM" | "" }) => {
-    onChange(serialize(next.hour12 ?? hour12, next.minute ?? minute, next.period ?? period));
+  const emit = (next: { hour12?: string; minute?: string; period?: "AM" | "PM" | "" }) => {
+    const h = next.hour12 ?? hour12;
+    const m = next.minute ?? minute;
+    const p = next.period ?? period;
+    if (next.hour12 !== undefined) setHour12(next.hour12);
+    if (next.minute !== undefined) setMinute(next.minute);
+    if (next.period !== undefined) setPeriod(next.period);
+    onChange(serialize(h, m, p));
   };
 
   return (
     <div className="flex items-center gap-1">
       <select
         value={hour12}
-        onChange={(e) => update({ hour12: e.target.value })}
+        onChange={(e) => emit({ hour12: e.target.value })}
         required={required}
         className={baseClass}
         aria-label="Hora"
@@ -61,7 +83,7 @@ export function TimePicker12h({ value, onChange, required, className }: TimePick
       <span className="text-sm text-muted-foreground">:</span>
       <select
         value={minute}
-        onChange={(e) => update({ minute: e.target.value })}
+        onChange={(e) => emit({ minute: e.target.value })}
         required={required}
         className={baseClass}
         aria-label="Minutos"
@@ -80,7 +102,7 @@ export function TimePicker12h({ value, onChange, required, className }: TimePick
       </select>
       <select
         value={period}
-        onChange={(e) => update({ period: e.target.value as "AM" | "PM" })}
+        onChange={(e) => emit({ period: e.target.value as "AM" | "PM" })}
         required={required}
         className={baseClass}
         aria-label="AM o PM"
