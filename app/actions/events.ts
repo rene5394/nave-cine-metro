@@ -1,11 +1,18 @@
 "use server";
 
 import { z } from "zod";
+import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/prisma";
 import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createProducts, updateProducts, getLatestProduct, type N1COProductSync } from "@/lib/n1co";
 import { uploadImage, deleteImage } from "@/lib/s3";
 import path from "path";
+
+function revalidateEventViews() {
+  revalidatePath("/");
+  revalidatePath("/admin/panel-de-control");
+  revalidatePath("/admin/eventos");
+}
 
 export async function getEvents({
   page = 1,
@@ -63,8 +70,12 @@ export async function getEvents({
   };
 }
 
-export async function getEventsCount() {
-  return prisma.event.count();
+export async function getEventsStatusCounts() {
+  const [active, inactive] = await Promise.all([
+    prisma.event.count({ where: { status: EventStatus.ACTIVE } }),
+    prisma.event.count({ where: { status: EventStatus.DEACTIVE } }),
+  ]);
+  return { active, inactive };
 }
 
 export async function deleteEvent(id: string) {
@@ -73,6 +84,7 @@ export async function deleteEvent(id: string) {
 
   await prisma.event.update({ where: { id }, data: { status: EventStatus.DELETED } });
 
+  revalidateEventViews();
   return { success: true };
 }
 
@@ -90,6 +102,7 @@ export async function setEventStatus(id: string, status: "ACTIVE" | "DEACTIVE") 
     return { error: "No se pudo actualizar el estado del evento" };
   }
 
+  revalidateEventViews();
   return { success: true };
 }
 
@@ -259,6 +272,7 @@ export async function createEvent(formData: FormData) {
     console.warn("N1CO sync failed on create:", error instanceof Error ? error.message : error);
   }
 
+  revalidateEventViews();
   return { event };
 }
 
@@ -352,5 +366,6 @@ export async function updateEvent(id: string, formData: FormData) {
     console.warn("N1CO sync failed on update:", error instanceof Error ? error.message : error);
   }
 
+  revalidateEventViews();
   return { event };
 }

@@ -1,9 +1,9 @@
 import Link from "next/link";
 import { BarChart3, Package, Users } from "lucide-react";
-import { getEventsCount } from "@/app/actions/events";
+import { getEventsStatusCounts } from "@/app/actions/events";
 
 export default async function DashboardPage() {
-  const totalEvents = await getEventsCount();
+  const { active, inactive } = await getEventsStatusCounts();
 
   return (
     <div className="space-y-6">
@@ -12,7 +12,7 @@ export default async function DashboardPage() {
         <p className="text-muted-foreground">Bienvenido al panel administrativo de EntradasYA</p>
       </div>
 
-      <div className="grid gap-4 md:grid-cols-3">
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
         <Link
           href="/admin/eventos"
           className="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary"
@@ -23,9 +23,26 @@ export default async function DashboardPage() {
             </div>
             <div>
               <p className="text-xs uppercase tracking-wider text-muted-foreground">
-                Total Eventos
+                Eventos Activos
               </p>
-              <p className="text-2xl font-bold text-foreground">{totalEvents}</p>
+              <p className="text-2xl font-bold text-foreground">{active}</p>
+            </div>
+          </div>
+        </Link>
+
+        <Link
+          href="/admin/eventos?inactivos=1"
+          className="rounded-lg border border-border bg-card p-6 shadow-sm transition-shadow hover:shadow-md focus:outline-none focus:ring-2 focus:ring-primary"
+        >
+          <div className="flex items-center gap-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-lg bg-muted">
+              <Package className="h-6 w-6 text-muted-foreground" />
+            </div>
+            <div>
+              <p className="text-xs uppercase tracking-wider text-muted-foreground">
+                Eventos Inactivos
+              </p>
+              <p className="text-2xl font-bold text-foreground">{inactive}</p>
             </div>
           </div>
         </Link>

@@ -14,8 +14,6 @@ export default async function HomePage() {
     getCategories(),
   ]);
 
-  console.log("Events:", events);
-
   return (
     <div className="min-h-screen bg-background">
       <Header />
