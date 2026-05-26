@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { prisma } from "@/lib/prisma";
+import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createProducts, updateProducts, getLatestProduct, type N1COProductSync } from "@/lib/n1co";
 import { uploadImage, deleteImage } from "@/lib/s3";
 import path from "path";
@@ -12,12 +13,14 @@ export async function getEvents({
   name,
   categoryId,
   featured,
+  includeInactive,
 }: {
   page?: number;
   pageSize?: number;
   name?: string;
   categoryId?: string;
   featured?: boolean;
+  includeInactive?: boolean;
 } = {}) {
   const safePage = Math.max(1, Math.floor(page));
   const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
@@ -29,6 +32,9 @@ export async function getEvents({
       : {}),
     ...(categoryId ? { categoryId } : {}),
     ...(featured ? { featured: true } : {}),
+    status: includeInactive
+      ? { in: [EventStatus.ACTIVE, EventStatus.DEACTIVE] }
+      : EventStatus.ACTIVE,
   };
 
   // Two independent reads — no atomicity needed. Avoid $transaction so we
@@ -65,8 +71,24 @@ export async function deleteEvent(id: string) {
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event) return { error: "Event not found" };
 
-  await deleteImage(event.image);
-  await prisma.event.delete({ where: { id } });
+  await prisma.event.update({ where: { id }, data: { status: EventStatus.DELETED } });
+
+  return { success: true };
+}
+
+const setEventStatusSchema = z.object({
+  status: z.enum([EventStatus.ACTIVE, EventStatus.DEACTIVE]),
+});
+
+export async function setEventStatus(id: string, status: "ACTIVE" | "DEACTIVE") {
+  const parsed = setEventStatusSchema.safeParse({ status });
+  if (!parsed.success) return { error: "Estado inválido" };
+
+  try {
+    await prisma.event.update({ where: { id }, data: { status: parsed.data.status } });
+  } catch {
+    return { error: "No se pudo actualizar el estado del evento" };
+  }
 
   return { success: true };
 }

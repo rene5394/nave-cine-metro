@@ -2,8 +2,14 @@
 
 import React, { useCallback, useState, useEffect, useRef, useTransition } from "react";
 import Image from "next/image";
-import { Plus, Trash2, Edit2, Loader, Star, Search } from "lucide-react";
-import { createEvent, updateEvent, getEvents, deleteEvent } from "@/app/actions/events";
+import { Plus, Trash2, Edit2, Loader, Star, Search, Eye, EyeOff } from "lucide-react";
+import {
+  createEvent,
+  updateEvent,
+  getEvents,
+  deleteEvent,
+  setEventStatus,
+} from "@/app/actions/events";
 import { getCategories } from "@/app/actions/categories";
 import { categoryBadgeStyle } from "@/lib/category-color";
 import { formatPrice, formatTime12h } from "@/lib/events-shared";
@@ -47,6 +53,7 @@ type Event = {
   city: string;
   priceInCents: number;
   featured: boolean;
+  status: "ACTIVE" | "DEACTIVE" | "DELETED";
   n1coProductId: string | null;
   screenings: ScreeningRow[];
 };
@@ -92,6 +99,7 @@ export default function EventsPage() {
   const [debouncedName, setDebouncedName] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("");
   const [featuredOnly, setFeaturedOnly] = useState(false);
+  const [includeInactive, setIncludeInactive] = useState(false);
   const [categories, setCategories] = useState<Category[]>([]);
   const dialogContentRef = useRef<HTMLDivElement | null>(null);
 
@@ -124,8 +132,9 @@ export default function EventsPage() {
           name: debouncedName || undefined,
           categoryId: categoryFilter || undefined,
           featured: featuredOnly || undefined,
+          includeInactive: includeInactive || undefined,
         });
-        setEvents(result.events);
+        setEvents(result.events as Event[]);
         setTotalPages(result.totalPages);
         if (result.page !== targetPage) {
           setPage(result.page);
@@ -136,7 +145,7 @@ export default function EventsPage() {
         setLoading(false);
       }
     },
-    [page, debouncedName, categoryFilter, featuredOnly],
+    [page, debouncedName, categoryFilter, featuredOnly, includeInactive],
   );
 
   useEffect(() => {
@@ -144,7 +153,7 @@ export default function EventsPage() {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     refresh(page);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, debouncedName, categoryFilter, featuredOnly]);
+  }, [page, debouncedName, categoryFilter, featuredOnly, includeInactive]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -221,6 +230,21 @@ export default function EventsPage() {
       } else {
         await refresh(page);
       }
+    });
+  };
+
+  const handleToggleStatus = async (event: Event) => {
+    const next = event.status === "ACTIVE" ? "DEACTIVE" : "ACTIVE";
+    const prompt = next === "DEACTIVE" ? "¿Desactivar este evento?" : "¿Activar este evento?";
+    if (!confirm(prompt)) return;
+
+    startTransition(async () => {
+      const result = await setEventStatus(event.id, next);
+      if ("error" in result && result.error) {
+        setError(result.error);
+        return;
+      }
+      await refresh(page);
     });
   };
 
@@ -323,6 +347,18 @@ export default function EventsPage() {
             className="h-4 w-4 rounded border-border"
           />
           Solo destacados
+        </label>
+        <label className="flex items-center gap-2 text-sm text-foreground">
+          <input
+            type="checkbox"
+            checked={includeInactive}
+            onChange={(e) => {
+              setIncludeInactive(e.target.checked);
+              setPage(1);
+            }}
+            className="h-4 w-4 rounded border-border"
+          />
+          Ver inactivos
         </label>
       </div>
 
@@ -669,7 +705,12 @@ export default function EventsPage() {
                 </tr>
               ) : (
                 events.map((event) => (
-                  <tr key={event.id} className="border-t border-border hover:bg-secondary/30">
+                  <tr
+                    key={event.id}
+                    className={`border-t border-border hover:bg-secondary/30 ${
+                      event.status === "DEACTIVE" ? "opacity-60" : ""
+                    }`}
+                  >
                     <td className="px-6 py-4 text-sm">
                       <Image
                         src={event.image}
@@ -688,6 +729,11 @@ export default function EventsPage() {
                           />
                         )}
                         {event.name}
+                        {event.status === "DEACTIVE" && (
+                          <span className="rounded-full bg-muted px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-muted-foreground">
+                            Inactivo
+                          </span>
+                        )}
                       </span>
                     </td>
                     <td className="px-6 py-4 text-sm">
@@ -721,6 +767,25 @@ export default function EventsPage() {
                           <Edit2 className="h-3 w-3" />
                           Editar
                         </button>
+                        {event.status === "ACTIVE" ? (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(event)}
+                            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-muted-foreground transition-colors hover:bg-muted"
+                          >
+                            <EyeOff className="h-3 w-3" />
+                            Desactivar
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => handleToggleStatus(event)}
+                            className="flex items-center gap-1 rounded px-2 py-1 text-xs font-semibold text-emerald-600 transition-colors hover:bg-emerald-500/10"
+                          >
+                            <Eye className="h-3 w-3" />
+                            Activar
+                          </button>
+                        )}
                         <button
                           type="button"
                           onClick={() => handleDelete(event.id)}

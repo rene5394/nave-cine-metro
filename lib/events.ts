@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/prisma";
+import { EventStatus } from "@/lib/generated/prisma/enums";
 
 export {
   type TicketEvent,
@@ -15,21 +16,22 @@ const screeningsInclude = {
 
 export async function getEvents() {
   return prisma.event.findMany({
+    where: { status: EventStatus.ACTIVE },
     include: screeningsInclude,
     orderBy: { createdAt: "desc" },
   });
 }
 
 export async function getEventById(id: string) {
-  return prisma.event.findUnique({
-    where: { id },
+  return prisma.event.findFirst({
+    where: { id, status: EventStatus.ACTIVE },
     include: screeningsInclude,
   });
 }
 
 export async function getEventsByCategory(slug: string) {
   return prisma.event.findMany({
-    where: { category: { slug } },
+    where: { category: { slug }, status: EventStatus.ACTIVE },
     include: screeningsInclude,
     orderBy: { createdAt: "desc" },
   });
@@ -37,7 +39,7 @@ export async function getEventsByCategory(slug: string) {
 
 export async function getFeaturedEvents() {
   return prisma.event.findMany({
-    where: { featured: true },
+    where: { featured: true, status: EventStatus.ACTIVE },
     include: screeningsInclude,
     orderBy: { createdAt: "desc" },
   });

@@ -1,6 +1,7 @@
 "use server";
 
 import { prisma } from "@/lib/prisma";
+import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createCheckoutLink, getCheckoutOrder } from "@/lib/n1co";
 import { sendTicketsEmail } from "@/lib/email";
 
@@ -21,7 +22,7 @@ export async function startCheckout(cartItems: CartLineItem[]) {
   const screeningIds = cartItems.map((item) => item.screeningId);
 
   const [events, screenings] = await Promise.all([
-    prisma.event.findMany({ where: { id: { in: eventIds } } }),
+    prisma.event.findMany({ where: { id: { in: eventIds }, status: EventStatus.ACTIVE } }),
     prisma.screening.findMany({ where: { id: { in: screeningIds } } }),
   ]);
 

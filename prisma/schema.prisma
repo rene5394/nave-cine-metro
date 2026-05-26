@@ -24,6 +24,12 @@ enum TicketStatus {
   REDEEMED
 }
 
+enum EventStatus {
+  ACTIVE
+  DEACTIVE
+  DELETED
+}
+
 model Category {
   id          String   @id @default(uuid()) @db.Uuid
   slug        String   @unique
@@ -65,15 +71,17 @@ model Event {
   venue           String
   city            String
   priceInCents    Int
-  featured        Boolean  @default(false)
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
+  featured        Boolean     @default(false)
+  status          EventStatus @default(ACTIVE)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
   orderItems OrderItem[]
   screenings Screening[]
 
   @@index([categoryId])
   @@index([featured])
+  @@index([status])
   @@map("events")
 }
 
