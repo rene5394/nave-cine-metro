@@ -42,6 +42,13 @@ export async function login(
     return { success: false, error: "Credenciales inválidas" };
   }
 
+  if (user.status !== "ACTIVE") {
+    return {
+      success: false,
+      error: "Tu cuenta ha sido desactivada. Contacta a un administrador.",
+    };
+  }
+
   await setSessionCookie({
     id: user.id,
     email: user.email,
