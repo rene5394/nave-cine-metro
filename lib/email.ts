@@ -138,3 +138,58 @@ export async function sendTicketsEmail(
     return { ok: false, error: msg };
   }
 }
+
+export async function sendPasswordResetEmail(
+  user: { email: string; name?: string | null },
+  resetUrl: string,
+): Promise<SendResult> {
+  try {
+    const resend = getResend();
+    if (!resend) return { ok: false, error: "RESEND_API_KEY no configurado" };
+
+    const from = process.env.EMAIL_FROM ?? "EntradasYa <onboarding@resend.dev>";
+    const firstName = user.name?.trim().split(/\s+/)[0] ?? "";
+    const greeting = firstName ? `Hola ${escapeHtml(firstName)},` : "Hola,";
+
+    const html = `
+<!doctype html>
+<html><body style="margin:0;padding:0;background:#f9fafb;">
+  <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="100%" style="background:#f9fafb;padding:32px 0;">
+    <tr><td align="center">
+      <table role="presentation" cellpadding="0" cellspacing="0" border="0" width="600" style="max-width:600px;background:#ffffff;border-radius:16px;overflow:hidden;font-family:Arial,sans-serif;">
+        <tr><td style="background:${ACCENT};height:8px;line-height:8px;font-size:0;">&nbsp;</td></tr>
+        <tr><td style="padding:32px;">
+          <h1 style="margin:0 0 8px;font-size:22px;color:#111827;">${greeting}</h1>
+          <p style="margin:0 0 16px;font-size:14px;color:#6b7280;">
+            Recibimos una solicitud para restablecer tu contraseña. Haz clic en el siguiente botón para continuar:
+          </p>
+          <p style="margin:0 0 24px;text-align:center;">
+            <a href="${resetUrl}" style="display:inline-block;background:${ACCENT};color:#ffffff;text-decoration:none;padding:12px 24px;border-radius:8px;font-size:14px;font-weight:bold;">Restablecer contraseña</a>
+          </p>
+          <p style="margin:0 0 8px;font-size:12px;color:#9ca3af;">Este enlace expira en 1 hora. Si tú no solicitaste este cambio, puedes ignorar este correo.</p>
+          <p style="margin:0;font-size:11px;color:#9ca3af;word-break:break-all;">${escapeHtml(resetUrl)}</p>
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body></html>`;
+
+    const { error } = await resend.emails.send({
+      from,
+      to: user.email,
+      subject: "Restablece tu contraseña",
+      html,
+    });
+
+    if (error) {
+      console.error("[email] password reset send failed:", error.message ?? error.name);
+      return { ok: false, error: error.message ?? "Error al enviar correo" };
+    }
+
+    return { ok: true };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : "Error desconocido";
+    console.error("[email] password reset send threw:", msg);
+    return { ok: false, error: msg };
+  }
+}

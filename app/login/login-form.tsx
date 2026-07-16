@@ -3,6 +3,7 @@
 import { useActionState } from "react";
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
+import Link from "next/link";
 import { login } from "@/app/actions/auth";
 import { Role } from "@/lib/generated/prisma/enums";
 import { Button } from "@/components/ui/button";
@@ -20,7 +21,7 @@ function defaultForRole(role: Role | undefined): string {
   return "/";
 }
 
-export function LoginForm({ from }: { from?: string }) {
+export function LoginForm({ from, resetSuccess }: { from?: string; resetSuccess?: boolean }) {
   const router = useRouter();
   const [state, formAction, isPending] = useActionState(login, null);
 
@@ -39,6 +40,11 @@ export function LoginForm({ from }: { from?: string }) {
       </CardHeader>
       <CardContent>
         <form action={formAction} className="space-y-4">
+          {resetSuccess && (
+            <div className="rounded-md bg-green-500/10 p-3 text-sm text-green-600">
+              Tu contraseña fue actualizada correctamente. Ya puedes iniciar sesión.
+            </div>
+          )}
           {state && !state.success && (
             <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
               {state.error}
@@ -56,6 +62,11 @@ export function LoginForm({ from }: { from?: string }) {
             {isPending ? "Ingresando..." : "Ingresar"}
           </Button>
         </form>
+        <p className="mt-4 text-center text-sm text-muted-foreground">
+          <Link href="/forgot-password" className="underline underline-offset-4 hover:text-primary">
+            ¿Olvidaste tu contraseña?
+          </Link>
+        </p>
       </CardContent>
     </Card>
   );
