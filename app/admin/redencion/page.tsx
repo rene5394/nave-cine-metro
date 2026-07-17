@@ -153,8 +153,19 @@ export default function RedencionPage() {
       </header>
 
       <div className="overflow-hidden rounded-xl border border-border bg-black shadow-md">
-        <div id={READER_ID} className="aspect-square w-full" />
+        <div id={READER_ID} className="relative aspect-square w-full" />
       </div>
+      <style jsx global>{`
+        @media (max-width: 767px) {
+          #${READER_ID} video {
+            position: absolute;
+            inset: 0;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover;
+          }
+        }
+      `}</style>
 
       {!cameraStarted && startError && (
         <div
