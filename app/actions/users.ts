@@ -14,6 +14,9 @@ function revalidateUserViews() {
 }
 
 export async function getUsers({ includeInactive }: { includeInactive?: boolean } = {}) {
+  const admin = await requireActiveAdmin();
+  if (!admin) throw new Error("No autorizado");
+
   return prisma.user.findMany({
     where: {
       status: includeInactive

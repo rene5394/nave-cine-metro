@@ -6,6 +6,7 @@ import { prisma } from "@/lib/prisma";
 import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createProducts, updateProducts, getLatestProduct, type N1COProductSync } from "@/lib/n1co";
 import { uploadImage, deleteImage } from "@/lib/s3";
+import { requireActiveAdmin } from "@/lib/authz";
 import path from "path";
 
 function revalidateEventViews() {
@@ -33,13 +34,16 @@ export async function getEvents({
   const safePageSize = Math.min(100, Math.max(1, Math.floor(pageSize)));
   const skip = (safePage - 1) * safePageSize;
 
+  const admin = includeInactive ? await requireActiveAdmin() : null;
+  const canSeeInactive = includeInactive && !!admin;
+
   const where = {
     ...(name && name.trim()
       ? { name: { contains: name.trim(), mode: "insensitive" as const } }
       : {}),
     ...(categoryId ? { categoryId } : {}),
     ...(featured ? { featured: true } : {}),
-    status: includeInactive
+    status: canSeeInactive
       ? { in: [EventStatus.ACTIVE, EventStatus.DEACTIVE] }
       : EventStatus.ACTIVE,
   };
@@ -71,6 +75,9 @@ export async function getEvents({
 }
 
 export async function getEventsStatusCounts() {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { active: 0, inactive: 0 };
+
   const [active, inactive] = await Promise.all([
     prisma.event.count({ where: { status: EventStatus.ACTIVE } }),
     prisma.event.count({ where: { status: EventStatus.DEACTIVE } }),
@@ -79,6 +86,9 @@ export async function getEventsStatusCounts() {
 }
 
 export async function deleteEvent(id: string) {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { error: "No autorizado" };
+
   const event = await prisma.event.findUnique({ where: { id } });
   if (!event) return { error: "Event not found" };
 
@@ -93,6 +103,9 @@ const setEventStatusSchema = z.object({
 });
 
 export async function setEventStatus(id: string, status: "ACTIVE" | "DEACTIVE") {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { error: "No autorizado" };
+
   const parsed = setEventStatusSchema.safeParse({ status });
   if (!parsed.success) return { error: "Estado inválido" };
 
@@ -203,6 +216,9 @@ async function uploadEventImage(file: File, sku: string): Promise<string> {
 }
 
 export async function createEvent(formData: FormData) {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { error: { form: ["No autorizado"] } };
+
   const fields = Object.fromEntries(formData.entries());
   const imageFile = formData.get("image") as File | null;
 
@@ -277,6 +293,9 @@ export async function createEvent(formData: FormData) {
 }
 
 export async function updateEvent(id: string, formData: FormData) {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { error: { form: ["No autorizado"] } };
+
   const fields = Object.fromEntries(formData.entries());
   const imageFile = formData.get("image") as File | null;
 
