@@ -163,12 +163,13 @@ export async function resetPassword(
     };
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
-
-  const claimed = await prisma.passwordResetToken.updateMany({
-    where: { id: record.id, usedAt: null },
-    data: { usedAt: new Date() },
-  });
+  const [hashedPassword, claimed] = await Promise.all([
+    bcrypt.hash(password, 10),
+    prisma.passwordResetToken.updateMany({
+      where: { id: record.id, usedAt: null },
+      data: { usedAt: new Date() },
+    }),
+  ]);
 
   if (claimed.count === 0) {
     return {

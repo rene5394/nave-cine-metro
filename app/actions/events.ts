@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createProducts, updateProducts, getLatestProduct, type N1COProductSync } from "@/lib/n1co";
@@ -269,24 +270,26 @@ export async function createEvent(formData: FormData) {
     return { error: formatPrismaError(error) };
   }
 
-  try {
-    const { categoryId: _cid, ...rest } = eventFields;
-    await createProducts([
-      toN1COProduct({ ...rest, screenings, image: imageUrl, categorySlug: category.slug }),
-    ]);
+  after(async () => {
+    try {
+      const { categoryId: _cid, ...rest } = eventFields;
+      await createProducts([
+        toN1COProduct({ ...rest, screenings, image: imageUrl, categorySlug: category.slug }),
+      ]);
 
-    if (!event.n1coProductId) {
-      const latest = await getLatestProduct();
-      if (latest) {
-        await prisma.event.update({
-          where: { id: event.id },
-          data: { n1coProductId: String(latest.productId) },
-        });
+      if (!event.n1coProductId) {
+        const latest = await getLatestProduct();
+        if (latest) {
+          await prisma.event.update({
+            where: { id: event.id },
+            data: { n1coProductId: String(latest.productId) },
+          });
+        }
       }
+    } catch (error) {
+      console.warn("N1CO sync failed on create:", error instanceof Error ? error.message : error);
     }
-  } catch (error) {
-    console.warn("N1CO sync failed on create:", error instanceof Error ? error.message : error);
-  }
+  });
 
   revalidateEventViews();
   return { event };
@@ -375,15 +378,17 @@ export async function updateEvent(id: string, formData: FormData) {
     image: imageUrl,
     categorySlug: category.slug,
   });
-  try {
-    if (event.n1coProductId) {
-      await updateProducts([n1coProduct]);
-    } else {
-      await createProducts([n1coProduct]);
+  after(async () => {
+    try {
+      if (event.n1coProductId) {
+        await updateProducts([n1coProduct]);
+      } else {
+        await createProducts([n1coProduct]);
+      }
+    } catch (error) {
+      console.warn("N1CO sync failed on update:", error instanceof Error ? error.message : error);
     }
-  } catch (error) {
-    console.warn("N1CO sync failed on update:", error instanceof Error ? error.message : error);
-  }
+  });
 
   revalidateEventViews();
   return { event };

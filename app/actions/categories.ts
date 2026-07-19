@@ -2,6 +2,7 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CategoryStatus, EventStatus } from "@/lib/generated/prisma/enums";
 import { syncCollections, type N1COCollection } from "@/lib/n1co";
@@ -98,7 +99,7 @@ export async function createCategory(formData: FormData): Promise<CategoryResult
       description: parsed.data.description ?? null,
     },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
@@ -129,7 +130,7 @@ export async function updateCategory(id: string, formData: FormData): Promise<Ca
       description: parsed.data.description ?? null,
     },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
@@ -152,7 +153,7 @@ export async function deleteCategory(id: string): Promise<CategoryResult> {
     where: { id },
     data: { status: CategoryStatus.DELETED },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
@@ -192,7 +193,7 @@ export async function setCategoryStatus(
     return { success: false, error: "No se pudo actualizar el estado de la categoría" };
   }
 
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
