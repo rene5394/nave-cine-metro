@@ -15,3 +15,6 @@ node_modules/
 *.tsbuildinfo
 coverage/
 *.log
+
+# Local Claude Code agent memory (per-machine, not shared project state)
+.claude/agent-memory/

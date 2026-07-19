@@ -138,12 +138,13 @@ async function loadIssuedTickets(orderId: string): Promise<IssuedTicket[]> {
 }
 
 export async function verifyPayment(orderCode: string) {
-  const n1coOrder = await getCheckoutOrder(orderCode);
-
-  const localOrder = await prisma.order.findFirst({
-    where: { n1coSessionId: orderCode },
-    include: { items: true },
-  });
+  const [n1coOrder, localOrder] = await Promise.all([
+    getCheckoutOrder(orderCode),
+    prisma.order.findFirst({
+      where: { n1coSessionId: orderCode },
+      include: { items: true },
+    }),
+  ]);
 
   if (!localOrder) {
     return { status: "ERROR" as const, orderCode };

@@ -2,10 +2,12 @@
 
 import { z } from "zod";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { CategoryStatus, EventStatus } from "@/lib/generated/prisma/enums";
 import { syncCollections, type N1COCollection } from "@/lib/n1co";
 import { CATEGORY_COLOR_REGEX } from "@/lib/category-color";
+import { requireActiveAdmin } from "@/lib/authz";
 
 const slugSchema = z
   .string()
@@ -61,9 +63,12 @@ async function pushCollectionsToN1CO() {
 }
 
 export async function getCategories({ includeInactive }: { includeInactive?: boolean } = {}) {
+  const admin = includeInactive ? await requireActiveAdmin() : null;
+  const canSeeInactive = includeInactive && !!admin;
+
   return prisma.category.findMany({
     where: {
-      status: includeInactive
+      status: canSeeInactive
         ? { in: [CategoryStatus.ACTIVE, CategoryStatus.DEACTIVE] }
         : CategoryStatus.ACTIVE,
     },
@@ -72,6 +77,9 @@ export async function getCategories({ includeInactive }: { includeInactive?: boo
 }
 
 export async function createCategory(formData: FormData): Promise<CategoryResult> {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { success: false, error: "No autorizado" };
+
   const parsed = readCategoryForm(formData);
 
   if (!parsed.success) {
@@ -91,12 +99,15 @@ export async function createCategory(formData: FormData): Promise<CategoryResult
       description: parsed.data.description ?? null,
     },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
 
 export async function updateCategory(id: string, formData: FormData): Promise<CategoryResult> {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { success: false, error: "No autorizado" };
+
   const parsed = readCategoryForm(formData);
 
   if (!parsed.success) {
@@ -119,12 +130,15 @@ export async function updateCategory(id: string, formData: FormData): Promise<Ca
       description: parsed.data.description ?? null,
     },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
 
 export async function deleteCategory(id: string): Promise<CategoryResult> {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { success: false, error: "No autorizado" };
+
   const activeEvents = await prisma.event.count({
     where: { categoryId: id, status: EventStatus.ACTIVE },
   });
@@ -139,7 +153,7 @@ export async function deleteCategory(id: string): Promise<CategoryResult> {
     where: { id },
     data: { status: CategoryStatus.DELETED },
   });
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }
@@ -152,6 +166,9 @@ export async function setCategoryStatus(
   id: string,
   status: "ACTIVE" | "DEACTIVE",
 ): Promise<CategoryResult> {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { success: false, error: "No autorizado" };
+
   const parsed = setCategoryStatusSchema.safeParse({ status });
   if (!parsed.success) return { success: false, error: "Estado inválido" };
 
@@ -176,7 +193,7 @@ export async function setCategoryStatus(
     return { success: false, error: "No se pudo actualizar el estado de la categoría" };
   }
 
-  await pushCollectionsToN1CO();
+  after(() => pushCollectionsToN1CO());
   revalidateCategoryViews();
   return { success: true };
 }

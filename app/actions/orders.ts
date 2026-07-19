@@ -3,6 +3,7 @@
 import { z } from "zod";
 import type { Prisma } from "@/lib/generated/prisma/client";
 import { prisma } from "@/lib/prisma";
+import { requireActiveAdmin } from "@/lib/authz";
 
 const filtersSchema = z.object({
   eventId: z.string().uuid().optional(),
@@ -15,6 +16,9 @@ const filtersSchema = z.object({
 export type OrderFilters = z.input<typeof filtersSchema>;
 
 export async function getOrders(input: OrderFilters = {}) {
+  const admin = await requireActiveAdmin();
+  if (!admin) return { ok: false as const, error: "No autorizado" };
+
   const parsed = filtersSchema.safeParse(input);
   if (!parsed.success) {
     return { ok: false as const, error: "Filtros inválidos" };

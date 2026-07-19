@@ -36,6 +36,11 @@ enum CategoryStatus {
   DELETED
 }
 
+enum UserStatus {
+  ACTIVE
+  DEACTIVE
+}
+
 model Category {
   id          String         @id @default(uuid()) @db.Uuid
   slug        String         @unique
@@ -53,17 +58,33 @@ model Category {
 }
 
 model User {
-  id        String   @id @default(uuid()) @db.Uuid
-  email     String   @unique
+  id        String     @id @default(uuid()) @db.Uuid
+  email     String     @unique
   name      String
   password  String
-  role      Role     @default(CLIENT)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  role      Role       @default(CLIENT)
+  status    UserStatus @default(ACTIVE)
+  createdAt DateTime   @default(now())
+  updatedAt DateTime   @updatedAt
 
-  orders Order[]
+  orders              Order[]
+  passwordResetTokens PasswordResetToken[]
 
+  @@index([status])
   @@map("users")
+}
+
+model PasswordResetToken {
+  id        String    @id @default(uuid()) @db.Uuid
+  userId    String    @db.Uuid
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  tokenHash String    @unique
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
+  @@map("password_reset_tokens")
 }
 
 model Event {
