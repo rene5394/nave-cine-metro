@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { PrismaClient } from "../lib/generated/prisma/client";
-import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 import bcrypt from "bcryptjs";
 import fs from "fs";
 import path from "path";
@@ -8,7 +8,7 @@ import { createProducts, type N1COProductSync } from "../lib/n1co";
 import { uploadImage, isS3Configured } from "../lib/s3";
 
 const prisma = new PrismaClient({
-  adapter: new PrismaPg({ connectionString: process.env.DATABASE_URL! }),
+  adapter: new PrismaMariaDb(process.env.DATABASE_URL!),
 });
 
 const DEFAULT_CATEGORIES = [

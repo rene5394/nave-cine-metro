@@ -174,7 +174,7 @@ describe("getEvents", () => {
 
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
-          where: expect.objectContaining({ name: { contains: "Rock", mode: "insensitive" } }),
+          where: expect.objectContaining({ name: { contains: "Rock" } }),
         }),
       );
     });
@@ -215,7 +215,7 @@ describe("getEvents", () => {
       expect(prismaMock.event.findMany).toHaveBeenCalledWith(
         expect.objectContaining({
           where: {
-            name: { contains: "Rock", mode: "insensitive" },
+            name: { contains: "Rock" },
             categoryId: CATEGORY_ID,
             featured: true,
             status: EventStatus.ACTIVE,

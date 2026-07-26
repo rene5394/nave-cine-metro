@@ -39,9 +39,7 @@ export async function getEvents({
   const canSeeInactive = includeInactive && !!admin;
 
   const where = {
-    ...(name && name.trim()
-      ? { name: { contains: name.trim(), mode: "insensitive" as const } }
-      : {}),
+    ...(name && name.trim() ? { name: { contains: name.trim() } } : {}),
     ...(categoryId ? { categoryId } : {}),
     ...(featured ? { featured: true } : {}),
     status: canSeeInactive
