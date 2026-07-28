@@ -17,7 +17,7 @@ describe("formatPrice", () => {
 
 describe("formatDate", () => {
   it("formats a date string as long es-MX date, anchored to UTC", () => {
-    expect(formatDate("2026-12-31")).toBe("jueves, 31 de diciembre de 2026");
+    expect(formatDate("2026-12-31")).toBe("Jueves, 31 de diciembre de 2026");
   });
 });
 

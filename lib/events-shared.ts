@@ -18,13 +18,14 @@ export function formatPrice(priceInCents: number): string {
 
 export function formatDate(dateStr: string): string {
   const date = new Date(dateStr + "T00:00:00Z");
-  return new Intl.DateTimeFormat("es-MX", {
+  const formatted = new Intl.DateTimeFormat("es-MX", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
     timeZone: "UTC",
   }).format(date);
+  return formatted.charAt(0).toUpperCase() + formatted.slice(1);
 }
 
 export function formatShortDate(dateStr: string): string {
