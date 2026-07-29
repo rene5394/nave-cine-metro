@@ -74,22 +74,33 @@ export async function startCheckout(cartItems: CartLineItem[]) {
   const firstEvent = events.find((e) => e.id === first.eventId)!;
   const firstScreening = screenings.find((s) => s.id === first.screeningId)!;
 
+  // N1CO rejects a checkout link whose lineItems repeat a SKU (e.g. the same
+  // event booked across two different screenings), so cart lines sharing an
+  // event are merged into a single line item with the combined quantity.
+  const lineItemsBySku = new Map<string, { event: (typeof events)[number]; quantity: number }>();
+  for (const item of cartItems) {
+    const event = events.find((e) => e.id === item.eventId)!;
+    const existing = lineItemsBySku.get(event.sku);
+    if (existing) {
+      existing.quantity += item.quantity;
+    } else {
+      lineItemsBySku.set(event.sku, { event, quantity: item.quantity });
+    }
+  }
+
   const checkoutLink = await createCheckoutLink({
     orderName: firstEvent.name,
     orderReference: order.id,
-    lineItems: cartItems.map((item) => {
-      const event = events.find((e) => e.id === item.eventId)!;
-      return {
-        sku: event.sku,
-        quantity: item.quantity,
-        product: {
-          name: event.name,
-          price: event.priceInCents / 100,
-          imageUrl: event.image ?? "",
-          requiresShipping: false,
-        },
-      };
-    }),
+    lineItems: Array.from(lineItemsBySku.entries()).map(([sku, { event, quantity }]) => ({
+      sku,
+      quantity,
+      product: {
+        name: event.name,
+        price: event.priceInCents / 100,
+        imageUrl: event.image ?? "",
+        requiresShipping: false,
+      },
+    })),
     metadata: [
       { name: "orderId", value: order.id },
       { name: "date", value: firstScreening.date },

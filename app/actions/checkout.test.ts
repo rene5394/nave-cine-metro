@@ -303,6 +303,71 @@ describe("startCheckout", () => {
       },
     ]);
   });
+
+  it("merges cart lines for the same event/SKU across different screenings into one N1CO line item", async () => {
+    const event = makeEvent({
+      id: EVENT_ID_1,
+      name: "Avengers End Game",
+      sku: "EVT-001",
+      priceInCents: 1000,
+    });
+    const screening1 = makeScreening({
+      id: SCREENING_ID_1,
+      eventId: EVENT_ID_1,
+      date: "2026-08-03",
+      time: "17:00",
+      availableTickets: 5,
+    });
+    const screening2 = makeScreening({
+      id: SCREENING_ID_2,
+      eventId: EVENT_ID_1,
+      date: "2026-08-03",
+      time: "20:00",
+      availableTickets: 5,
+    });
+    prismaMock.event.findMany.mockResolvedValue([event]);
+    prismaMock.screening.findMany.mockResolvedValue([screening1, screening2]);
+    prismaMock.order.create.mockResolvedValue(makeOrder({ id: ORDER_ID }));
+    createCheckoutLinkMock.mockResolvedValue({
+      orderCode: ORDER_CODE,
+      orderId: 3,
+      paymentLinkUrl: "https://pay.example.com/merged",
+    });
+
+    await startCheckout([
+      { eventId: EVENT_ID_1, screeningId: SCREENING_ID_1, quantity: 1 },
+      { eventId: EVENT_ID_1, screeningId: SCREENING_ID_2, quantity: 3 },
+    ]);
+
+    // Two separate OrderItems (one per screening) are still created for ticket issuance.
+    expect(prismaMock.order.create).toHaveBeenCalledWith({
+      data: {
+        status: "PENDING",
+        totalInCents: 4000,
+        items: {
+          create: [
+            { eventId: EVENT_ID_1, screeningId: SCREENING_ID_1, quantity: 1, priceInCents: 1000 },
+            { eventId: EVENT_ID_1, screeningId: SCREENING_ID_2, quantity: 3, priceInCents: 1000 },
+          ],
+        },
+      },
+    });
+
+    // But N1CO only gets a single line item per SKU, with the quantities combined.
+    const call = createCheckoutLinkMock.mock.calls[0][0];
+    expect(call.lineItems).toEqual([
+      {
+        sku: "EVT-001",
+        quantity: 4,
+        product: {
+          name: "Avengers End Game",
+          price: 10,
+          imageUrl: expect.any(String),
+          requiresShipping: false,
+        },
+      },
+    ]);
+  });
 });
 
 describe("verifyPayment", () => {
