@@ -14,6 +14,7 @@ const INCLUDE = {
     include: {
       event: { select: { id: true, name: true, sku: true } },
       screening: true,
+      tickets: { select: { redeemedAt: true } },
     },
   },
 };
@@ -149,6 +150,63 @@ describe("getOrders", () => {
         );
         const [findManyArgs] = prismaMock.order.findMany.mock.calls[0];
         expect(findManyArgs?.where).not.toHaveProperty("createdAt");
+      });
+
+      it("filters by items.some.tickets.some.redeemedAt instead of createdAt when dateField is 'redeemedAt'", async () => {
+        await getOrders({
+          dateField: "redeemedAt",
+          startDate: "2026-01-01",
+          endDate: "2026-01-31",
+        });
+
+        const expectedWhere = {
+          items: {
+            some: {
+              tickets: {
+                some: {
+                  redeemedAt: {
+                    gte: new Date("2026-01-01T00:00:00Z"),
+                    lte: new Date("2026-01-31T23:59:59Z"),
+                  },
+                },
+              },
+            },
+          },
+        };
+        expect(prismaMock.order.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: expectedWhere }),
+        );
+        const [findManyArgs] = prismaMock.order.findMany.mock.calls[0];
+        expect(findManyArgs?.where).not.toHaveProperty("createdAt");
+      });
+
+      it("merges eventId and a redeemedAt range into the same items.some(...) instead of two separate filters", async () => {
+        await getOrders({
+          eventId: VALID_EVENT_ID,
+          dateField: "redeemedAt",
+          startDate: "2026-01-01",
+        });
+
+        expect(prismaMock.order.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({
+            where: {
+              items: {
+                some: {
+                  eventId: VALID_EVENT_ID,
+                  tickets: { some: { redeemedAt: { gte: new Date("2026-01-01T00:00:00Z") } } },
+                },
+              },
+            },
+          }),
+        );
+      });
+
+      it("ignores dateField 'redeemedAt' when no start/end date is given (no items.tickets filter added)", async () => {
+        await getOrders({ dateField: "redeemedAt" });
+
+        expect(prismaMock.order.findMany).toHaveBeenCalledWith(
+          expect.objectContaining({ where: {} }),
+        );
       });
     });
 

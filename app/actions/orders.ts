@@ -9,6 +9,7 @@ const filtersSchema = z.object({
   eventId: z.string().uuid().optional(),
   startDate: z.string().optional(),
   endDate: z.string().optional(),
+  dateField: z.enum(["createdAt", "redeemedAt"]).default("createdAt"),
   page: z.number().int().min(1).default(1),
   pageSize: z.number().int().min(1).max(100).default(20),
 });
@@ -23,18 +24,27 @@ export async function getOrders(input: OrderFilters = {}) {
   if (!parsed.success) {
     return { ok: false as const, error: "Filtros inválidos" };
   }
-  const { eventId, startDate, endDate, page, pageSize } = parsed.data;
+  const { eventId, startDate, endDate, dateField, page, pageSize } = parsed.data;
+
+  const dateRange = {
+    ...(startDate ? { gte: new Date(`${startDate}T00:00:00Z`) } : {}),
+    ...(endDate ? { lte: new Date(`${endDate}T23:59:59Z`) } : {}),
+  };
+  const hasDateRange = startDate || endDate;
+
+  // eventId and a redemption-date range both narrow down which OrderItem
+  // qualifies, so they're merged into a single items.some(...) rather than
+  // two separate `items` keys (the second would just overwrite the first).
+  const itemsSomeFilter: Prisma.OrderItemWhereInput = {
+    ...(eventId ? { eventId } : {}),
+    ...(dateField === "redeemedAt" && hasDateRange
+      ? { tickets: { some: { redeemedAt: dateRange } } }
+      : {}),
+  };
 
   const where: Prisma.OrderWhereInput = {
-    ...(eventId ? { items: { some: { eventId } } } : {}),
-    ...(startDate || endDate
-      ? {
-          createdAt: {
-            ...(startDate ? { gte: new Date(`${startDate}T00:00:00Z`) } : {}),
-            ...(endDate ? { lte: new Date(`${endDate}T23:59:59Z`) } : {}),
-          },
-        }
-      : {}),
+    ...(Object.keys(itemsSomeFilter).length > 0 ? { items: { some: itemsSomeFilter } } : {}),
+    ...(dateField === "createdAt" && hasDateRange ? { createdAt: dateRange } : {}),
   };
 
   const [orders, total] = await Promise.all([
@@ -46,6 +56,7 @@ export async function getOrders(input: OrderFilters = {}) {
           include: {
             event: { select: { id: true, name: true, sku: true } },
             screening: true,
+            tickets: { select: { redeemedAt: true } },
           },
         },
       },

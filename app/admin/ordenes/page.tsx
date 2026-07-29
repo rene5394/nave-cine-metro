@@ -28,6 +28,13 @@ const STATUS_STYLES: Record<string, string> = {
   CANCELLED: "bg-red-100 text-red-800",
 };
 
+const STATUS_LABELS: Record<string, string> = {
+  PENDING: "Pendiente",
+  PAID: "Pagada",
+  REDEEMED: "Redimida",
+  CANCELLED: "Cancelada",
+};
+
 function formatDateTime(d: Date | string) {
   const date = new Date(d);
   return new Intl.DateTimeFormat("es-MX", {
@@ -40,16 +47,43 @@ function formatDateTime(d: Date | string) {
   }).format(date);
 }
 
+/** Latest redemption among the order's tickets, or null if none have been redeemed yet. */
+function getLatestRedemption(order: OrderRow): Date | null {
+  const dates = order.items
+    .flatMap((it) => it.tickets)
+    .map((t) => t.redeemedAt)
+    .filter((d): d is Date => d !== null);
+  if (dates.length === 0) return null;
+  return new Date(Math.max(...dates.map((d) => new Date(d).getTime())));
+}
+
+// The "Desde"/"Hasta" values are matched against order.createdAt as UTC day
+// boundaries (see app/actions/orders.ts), so the default range is computed
+// from the current UTC date rather than the browser's local date.
+function toDateInputValue(date: Date): string {
+  return date.toISOString().slice(0, 10);
+}
+
+/** Defaults the orders filter to today and the 6 days before it (a 7-day window). */
+function getDefaultDateRange() {
+  const today = new Date();
+  const sixDaysAgo = new Date(today);
+  sixDaysAgo.setUTCDate(today.getUTCDate() - 6);
+  return { startDate: toDateInputValue(sixDaysAgo), endDate: toDateInputValue(today) };
+}
+
 export default function OrdersPage() {
+  const defaultDateRange = getDefaultDateRange();
   const [orders, setOrders] = useState<OrderRow[]>([]);
   const [events, setEvents] = useState<EventOption[]>([]);
   const [loading, setLoading] = useState(true);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [eventId, setEventId] = useState("");
-  const [startDate, setStartDate] = useState("");
-  const [endDate, setEndDate] = useState("");
-  const [debouncedDates, setDebouncedDates] = useState({ startDate: "", endDate: "" });
+  const [dateField, setDateField] = useState<"createdAt" | "redeemedAt">("createdAt");
+  const [startDate, setStartDate] = useState(defaultDateRange.startDate);
+  const [endDate, setEndDate] = useState(defaultDateRange.endDate);
+  const [debouncedDates, setDebouncedDates] = useState(defaultDateRange);
 
   useEffect(() => {
     getEvents({ page: 1, pageSize: 100 })
@@ -69,6 +103,7 @@ export default function OrdersPage() {
         page,
         pageSize: PAGE_SIZE,
         eventId: eventId || undefined,
+        dateField,
         startDate: debouncedDates.startDate || undefined,
         endDate: debouncedDates.endDate || undefined,
       });
@@ -79,7 +114,7 @@ export default function OrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, eventId, debouncedDates]);
+  }, [page, eventId, dateField, debouncedDates]);
 
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
@@ -93,7 +128,7 @@ export default function OrdersPage() {
         <p className="text-muted-foreground">Historial de compras realizadas</p>
       </div>
 
-      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto]">
+      <div className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-[1fr_auto_auto_auto]">
         <select
           value={eventId}
           onChange={(e) => {
@@ -108,6 +143,17 @@ export default function OrdersPage() {
               {e.name}
             </option>
           ))}
+        </select>
+        <select
+          value={dateField}
+          onChange={(e) => {
+            setDateField(e.target.value as "createdAt" | "redeemedAt");
+            setPage(1);
+          }}
+          className="h-10 rounded-lg border border-border bg-input px-3 text-sm"
+        >
+          <option value="createdAt">Fecha de compra</option>
+          <option value="redeemedAt">Fecha de redención</option>
         </select>
         <div className="flex items-center gap-2">
           <label className="text-xs text-muted-foreground">Desde</label>
@@ -144,7 +190,12 @@ export default function OrdersPage() {
           <table className="w-full">
             <thead className="bg-secondary/50">
               <tr>
-                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Fecha</th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
+                  Fecha de compra
+                </th>
+                <th className="px-6 py-3 text-left text-sm font-bold text-foreground">
+                  Fecha de redención
+                </th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Cliente</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Películas</th>
                 <th className="px-6 py-3 text-left text-sm font-bold text-foreground">Tickets</th>
@@ -155,20 +206,42 @@ export default function OrdersPage() {
             <tbody>
               {orders.length === 0 ? (
                 <tr>
-                  <td colSpan={6} className="px-6 py-8 text-center text-muted-foreground">
+                  <td colSpan={7} className="px-6 py-8 text-center text-muted-foreground">
                     No hay órdenes que coincidan con los filtros.
                   </td>
                 </tr>
               ) : (
                 orders.map((order) => {
                   const tickets = order.items.reduce((n, it) => n + it.quantity, 0);
+                  const latestRedemption = getLatestRedemption(order);
                   return (
                     <tr key={order.id} className="border-t border-border hover:bg-secondary/30">
                       <td className="px-6 py-4 text-sm text-foreground">
                         {formatDateTime(order.createdAt)}
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground">
-                        {order.user?.email ?? "Invitado"}
+                        {latestRedemption ? (
+                          formatDateTime(latestRedemption)
+                        ) : (
+                          <span className="text-muted-foreground">—</span>
+                        )}
+                      </td>
+                      <td className="px-6 py-4 text-sm text-foreground">
+                        {(() => {
+                          const name = order.buyerName ?? order.user?.name;
+                          const email = order.buyerEmail ?? order.user?.email;
+                          if (!name && !email) return "Invitado";
+                          return (
+                            <>
+                              {name && <p className="font-medium">{name}</p>}
+                              {email && (
+                                <p className={name ? "text-xs text-muted-foreground" : undefined}>
+                                  {email}
+                                </p>
+                              )}
+                            </>
+                          );
+                        })()}
                       </td>
                       <td className="px-6 py-4 text-sm text-foreground">
                         <ul className="space-y-0.5">
@@ -195,7 +268,7 @@ export default function OrdersPage() {
                             STATUS_STYLES[order.status] ?? "bg-gray-100 text-gray-800"
                           }`}
                         >
-                          {order.status}
+                          {STATUS_LABELS[order.status] ?? order.status}
                         </span>
                       </td>
                     </tr>
