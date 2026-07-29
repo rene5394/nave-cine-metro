@@ -91,6 +91,8 @@ export function makeOrder(overrides: Partial<Order> = {}): Order {
     totalInCents: 5000,
     stripeSessionId: null,
     n1coSessionId: "N1CO-ORDER-CODE",
+    buyerName: null,
+    buyerEmail: null,
     createdAt: FIXED_DATE,
     updatedAt: FIXED_DATE,
     ...overrides,

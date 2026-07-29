@@ -418,7 +418,7 @@ describe("verifyPayment", () => {
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       expect(prismaMock.order.update).toHaveBeenCalledWith({
         where: { id: ORDER_ID },
-        data: { status: "PAID" },
+        data: { status: "PAID", buyerName: "Jane Buyer", buyerEmail: "buyer@example.com" },
       });
 
       // Ticket-creation math: quantity 3 -> 3 fresh-token entries, each tied
@@ -489,6 +489,11 @@ describe("verifyPayment", () => {
       expect(prismaMock.$transaction).toHaveBeenCalledTimes(1);
       expect(sendTicketsEmailMock).not.toHaveBeenCalled();
       expect(result).toMatchObject({ status: "PAID", orderCode: ORDER_CODE, emailSent: false });
+      // buyerName still gets persisted even though there's no email to send to.
+      expect(prismaMock.order.update).toHaveBeenCalledWith({
+        where: { id: ORDER_ID },
+        data: { status: "PAID", buyerName: "No Email Buyer", buyerEmail: undefined },
+      });
     });
 
     it("does not decrement availableTickets when the order item has no screeningId", async () => {
@@ -512,6 +517,11 @@ describe("verifyPayment", () => {
 
       expect(prismaMock.ticket.createMany).toHaveBeenCalledTimes(1);
       expect(prismaMock.screening.update).not.toHaveBeenCalled();
+      // No `payment` object at all on the N1CO response -> nothing to persist.
+      expect(prismaMock.order.update).toHaveBeenCalledWith({
+        where: { id: ORDER_ID },
+        data: { status: "PAID", buyerName: undefined, buyerEmail: undefined },
+      });
     });
   });
 

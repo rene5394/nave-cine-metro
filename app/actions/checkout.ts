@@ -165,10 +165,11 @@ export async function verifyPayment(orderCode: string) {
     (n1coOrder.orderStatus === "PAID" || n1coOrder.orderStatus === "FINALIZED") &&
     localOrder.status === "PENDING"
   ) {
+    const buyer = n1coOrder.payment?.buyer;
     await prisma.$transaction([
       prisma.order.update({
         where: { id: localOrder.id },
-        data: { status: "PAID" },
+        data: { status: "PAID", buyerName: buyer?.name, buyerEmail: buyer?.email },
       }),
       ...localOrder.items.flatMap((item) => {
         const ticketCreates = Array.from({ length: item.quantity }, () => ({
@@ -189,7 +190,6 @@ export async function verifyPayment(orderCode: string) {
     ]);
     const tickets = await loadIssuedTickets(localOrder.id);
     let emailSent = false;
-    const buyer = n1coOrder.payment?.buyer;
     if (buyer?.email) {
       const r = await sendTicketsEmail(localOrder.id, {
         email: buyer.email,

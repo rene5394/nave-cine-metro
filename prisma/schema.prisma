@@ -140,6 +140,8 @@ model Order {
   totalInCents    Int
   stripeSessionId String?     @unique
   n1coSessionId   String?     @unique
+  buyerName       String?
+  buyerEmail      String?
   createdAt       DateTime    @default(now())
   updatedAt       DateTime    @updatedAt
 
