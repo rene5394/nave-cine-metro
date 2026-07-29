@@ -108,7 +108,7 @@ export async function startCheckout(cartItems: CartLineItem[]) {
       { name: "venue", value: firstEvent.venue },
     ],
     successUrl: `${BASE_URL}/payment-success`,
-    cancelUrl: `${BASE_URL}/checkout?cancelled=true`,
+    cancelUrl: `${BASE_URL}/carrito?cancelled=true`,
   });
 
   await prisma.order.update({

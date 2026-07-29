@@ -3,7 +3,6 @@ import { getCategories } from "@/app/actions/categories";
 import Header from "@/components/header";
 import HeroSlider from "@/components/hero-slider";
 import EventGrid from "@/components/event-grid";
-import CartSidebar from "@/components/cart-sidebar";
 import EventDetailModal from "@/components/event-detail-modal";
 import Footer from "@/components/footer";
 
@@ -24,7 +23,6 @@ export default async function HomePage() {
         <EventGrid events={events} categories={categories} />
       </main>
       <Footer />
-      <CartSidebar />
       <EventDetailModal />
     </div>
   );

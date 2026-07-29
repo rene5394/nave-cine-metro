@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useCallback, useEffect, type ReactNode } from "react";
+import { useRouter } from "next/navigation";
 import type { TicketEvent } from "./events";
 
 export interface CartScreening {
@@ -23,8 +24,6 @@ interface CartContextType {
   clearCart: () => void;
   totalItems: number;
   totalPriceInCents: number;
-  isCartOpen: boolean;
-  setIsCartOpen: (open: boolean) => void;
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
@@ -37,7 +36,7 @@ function isSameLine(item: CartItem, eventId: string, screeningId: string) {
 
 export function CartProvider({ children }: { children: ReactNode }) {
   const [items, setItems] = useState<CartItem[]>([]);
-  const [isCartOpen, setIsCartOpen] = useState(false);
+  const router = useRouter();
 
   // Hydration effect: localStorage isn't available during SSR, so we sync
   // from the external store on mount.
@@ -58,20 +57,23 @@ export function CartProvider({ children }: { children: ReactNode }) {
     } catch {}
   }, [items]);
 
-  const addItem = useCallback((event: TicketEvent, screening: CartScreening, quantity = 1) => {
-    setItems((prev) => {
-      const existing = prev.find((item) => isSameLine(item, event.id, screening.id));
-      if (existing) {
-        return prev.map((item) =>
-          isSameLine(item, event.id, screening.id)
-            ? { ...item, quantity: item.quantity + quantity }
-            : item,
-        );
-      }
-      return [...prev, { event, screening, quantity }];
-    });
-    setIsCartOpen(true);
-  }, []);
+  const addItem = useCallback(
+    (event: TicketEvent, screening: CartScreening, quantity = 1) => {
+      setItems((prev) => {
+        const existing = prev.find((item) => isSameLine(item, event.id, screening.id));
+        if (existing) {
+          return prev.map((item) =>
+            isSameLine(item, event.id, screening.id)
+              ? { ...item, quantity: item.quantity + quantity }
+              : item,
+          );
+        }
+        return [...prev, { event, screening, quantity }];
+      });
+      router.push("/carrito");
+    },
+    [router],
+  );
 
   const removeItem = useCallback((eventId: string, screeningId: string) => {
     setItems((prev) => prev.filter((item) => !isSameLine(item, eventId, screeningId)));
@@ -110,8 +112,6 @@ export function CartProvider({ children }: { children: ReactNode }) {
         clearCart,
         totalItems,
         totalPriceInCents,
-        isCartOpen,
-        setIsCartOpen,
       }}
     >
       {children}

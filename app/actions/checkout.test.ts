@@ -212,7 +212,7 @@ describe("startCheckout", () => {
         { name: "venue", value: "Main Hall" },
       ],
       successUrl: "http://localhost:3000/payment-success",
-      cancelUrl: "http://localhost:3000/checkout?cancelled=true",
+      cancelUrl: "http://localhost:3000/carrito?cancelled=true",
     });
 
     expect(prismaMock.order.update).toHaveBeenCalledWith({

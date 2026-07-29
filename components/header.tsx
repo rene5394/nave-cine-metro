@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { ShoppingCart, Menu, X, Ticket } from "lucide-react";
 import { useState } from "react";
 import { useCart } from "@/lib/cart-context";
@@ -14,7 +15,7 @@ const NAV_LINKS = [
 ];
 
 export default function Header() {
-  const { totalItems, setIsCartOpen } = useCart();
+  const { totalItems } = useCart();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const handleNavClick = (href: string) => {
@@ -57,9 +58,8 @@ export default function Header() {
               {link.label}
             </button>
           ))}
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
+          <Link
+            href="/carrito"
             className="relative text-white transition-all hover:text-primary"
             aria-label="Abrir carrito"
           >
@@ -69,15 +69,14 @@ export default function Header() {
                 {totalItems}
               </span>
             )}
-          </button>
+          </Link>
         </nav>
 
         {/* Right Side */}
         <div className="flex items-center gap-4">
           {/* Mobile Cart */}
-          <button
-            type="button"
-            onClick={() => setIsCartOpen(true)}
+          <Link
+            href="/carrito"
             className="relative flex h-10 w-10 items-center justify-center rounded text-white transition-all hover:text-accent md:hidden"
             aria-label="Abrir carrito"
           >
@@ -87,7 +86,7 @@ export default function Header() {
                 {totalItems}
               </span>
             )}
-          </button>
+          </Link>
 
           {/* Donar Button */}
           <button

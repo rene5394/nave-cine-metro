@@ -1,8 +1,13 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import { renderHook, act, waitFor } from "@testing-library/react";
 import { CartProvider, useCart, type CartScreening } from "@/lib/cart-context";
 import type { TicketEvent } from "@/lib/events";
 import { makeEvent, makeCategory } from "@/tests/fixtures/factories";
+
+const { pushMock } = vi.hoisted(() => ({ pushMock: vi.fn() }));
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: pushMock }),
+}));
 
 const CART_STORAGE_KEY = "entradasya-cart-v2";
 
@@ -26,6 +31,7 @@ function makeScreening(overrides: Partial<CartScreening> = {}): CartScreening {
 
 beforeEach(() => {
   localStorage.clear();
+  pushMock.mockClear();
 });
 
 describe("useCart", () => {
@@ -66,7 +72,7 @@ describe("useCart", () => {
   });
 
   describe("addItem", () => {
-    it("adds a new line and opens the cart", () => {
+    it("adds a new line and navigates to /carrito", () => {
       const { result } = renderHook(() => useCart(), { wrapper: CartProvider });
       const event = makeTicketEvent();
       const screening = makeScreening();
@@ -76,7 +82,7 @@ describe("useCart", () => {
       });
 
       expect(result.current.items).toEqual([{ event, screening, quantity: 1 }]);
-      expect(result.current.isCartOpen).toBe(true);
+      expect(pushMock).toHaveBeenCalledWith("/carrito");
     });
 
     it("increments quantity instead of duplicating when the same event/screening is added again", () => {
