@@ -1,6 +1,10 @@
 allowBuilds:
   "@prisma/engines": true
   prisma: true
-  esbuild: true
+  # esbuild is only pulled in transitively by vitest/@vitejs/plugin-react
+  # (dev/test tooling, never invoked by the production build script), and
+  # its postinstall spawns its downloaded binary to self-verify — which
+  # fails with EACCES on hosts that mount the build directory noexec.
+  esbuild: false
   sharp: true
   unrs-resolver: true
