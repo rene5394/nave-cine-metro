@@ -4,6 +4,7 @@ import { prisma } from "@/lib/prisma";
 import { EventStatus } from "@/lib/generated/prisma/enums";
 import { createCheckoutLink, getCheckoutOrder } from "@/lib/n1co";
 import { sendTicketsEmail } from "@/lib/email";
+import { isScreeningPast } from "@/lib/events-shared";
 
 interface CartLineItem {
   eventId: string;
@@ -37,6 +38,9 @@ export async function startCheckout(cartItems: CartLineItem[]) {
     );
     if (!screening) {
       return { error: `Función no encontrada para "${event.name}"` };
+    }
+    if (isScreeningPast(screening.date, screening.time)) {
+      return { error: `La función de "${event.name}" ya pasó y no está disponible para compra.` };
     }
     if (screening.availableTickets < item.quantity) {
       return {

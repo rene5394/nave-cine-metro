@@ -382,9 +382,12 @@ describe("createEvent", () => {
     expect(uploadImageMock).not.toHaveBeenCalled();
   });
 
-  it("rejects when any screening is dated before today, before uploading the image", async () => {
+  it("allows a screening dated before today", async () => {
     requireActiveAdminMock.mockResolvedValue(ADMIN());
     prismaMock.category.findUnique.mockResolvedValue(makeCategory());
+    uploadImageMock.mockResolvedValue("https://cdn.test.example.com/events/new.jpg");
+    prismaMock.event.create.mockResolvedValue(makeEvent());
+    prismaMock.screening.createMany.mockResolvedValue({ count: 1 });
 
     const result = await createEvent(
       makeEventFormData(
@@ -394,11 +397,8 @@ describe("createEvent", () => {
       ),
     );
 
-    expect(result).toEqual({
-      error: { screenings: ["La fecha de la función debe ser hoy o una fecha futura"] },
-    });
-    expect(uploadImageMock).not.toHaveBeenCalled();
-    expect(prismaMock.event.create).not.toHaveBeenCalled();
+    expect(result).not.toHaveProperty("error");
+    expect(prismaMock.event.create).toHaveBeenCalled();
   });
 
   describe("happy path", () => {
@@ -771,7 +771,7 @@ describe("updateEvent", () => {
     expect(prismaMock.event.findUniqueOrThrow).not.toHaveBeenCalled();
   });
 
-  describe("nuanced past-date rule", () => {
+  describe("past-dated screenings are allowed", () => {
     // Pin "today" to a specific instant. The test environment's TZ
     // (America/El_Salvador, UTC-6, no DST) means a UTC instant near midnight
     // could roll the local calendar date backward, so we pin to local noon
@@ -779,7 +779,6 @@ describe("updateEvent", () => {
     // of exactly how far off UTC the local zone is.
     const TODAY = "2026-01-01";
     const YESTERDAY = "2025-12-31";
-    const OLDER_PAST_DATE = "2025-06-01";
     const SCREENING_ID = "44444444-4444-4444-4444-444444444444";
 
     beforeEach(() => {
@@ -791,16 +790,13 @@ describe("updateEvent", () => {
       vi.useRealTimers();
     });
 
-    it("rejects a NEW screening (no id) with a past date", async () => {
+    it("allows a NEW screening (no id) with a past date", async () => {
       const result = await updateEvent(
         EVENT_ID,
         makeEventFormData({}, [{ date: YESTERDAY, time: "20:00", availableTickets: 10 }]),
       );
 
-      expect(result).toEqual({
-        error: { screenings: ["La fecha de la función debe ser hoy o una fecha futura"] },
-      });
-      expect(prismaMock.event.update).not.toHaveBeenCalled();
+      expect(result).not.toHaveProperty("error");
     });
 
     it("allows an EXISTING screening (matched by id) to remain past-dated when its date is unchanged", async () => {
@@ -821,24 +817,6 @@ describe("updateEvent", () => {
         where: { id: SCREENING_ID },
         data: { date: YESTERDAY, time: "20:00", availableTickets: 10 },
       });
-    });
-
-    it("rejects an EXISTING screening whose date changed to a different past date", async () => {
-      prismaMock.screening.findMany.mockResolvedValue([
-        makeScreening({ id: SCREENING_ID, eventId: EVENT_ID, date: OLDER_PAST_DATE }),
-      ]);
-
-      const result = await updateEvent(
-        EVENT_ID,
-        makeEventFormData({}, [
-          { id: SCREENING_ID, date: YESTERDAY, time: "20:00", availableTickets: 10 },
-        ]),
-      );
-
-      expect(result).toEqual({
-        error: { screenings: ["La fecha de la función debe ser hoy o una fecha futura"] },
-      });
-      expect(prismaMock.event.update).not.toHaveBeenCalled();
     });
 
     it("allows a screening dated exactly today", async () => {
@@ -945,12 +923,6 @@ describe("updateEvent", () => {
       expect(prismaMock.screening.deleteMany).toHaveBeenCalledWith({
         where: { eventId: EVENT_ID },
       });
-    });
-
-    it("queries existing screenings scoped to this event", async () => {
-      await updateEvent(EVENT_ID, makeEventFormData({}, []));
-
-      expect(prismaMock.screening.findMany).toHaveBeenCalledWith({ where: { eventId: EVENT_ID } });
     });
   });
 

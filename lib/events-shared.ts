@@ -37,6 +37,13 @@ export function formatShortDate(dateStr: string): string {
   }).format(date);
 }
 
+const PURCHASE_GRACE_PERIOD_MS = 15 * 60 * 1000;
+
+export function isScreeningPast(date: string, time: string): boolean {
+  const screeningStart = new Date(`${date}T${time}`);
+  return screeningStart.getTime() + PURCHASE_GRACE_PERIOD_MS < Date.now();
+}
+
 export function formatTime12h(time: string): string {
   const [hStr, mStr] = time.split(":");
   const h = Number(hStr);

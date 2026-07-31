@@ -1,5 +1,11 @@
-import { describe, it, expect } from "vitest";
-import { formatPrice, formatDate, formatShortDate, formatTime12h } from "@/lib/events-shared";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  formatPrice,
+  formatDate,
+  formatShortDate,
+  formatTime12h,
+  isScreeningPast,
+} from "@/lib/events-shared";
 
 describe("formatPrice", () => {
   it("formats whole-dollar amounts as USD currency", () => {
@@ -46,5 +52,37 @@ describe("formatTime12h", () => {
 
   it("returns the input unchanged when it is not numeric", () => {
     expect(formatTime12h("not-a-time")).toBe("not-a-time");
+  });
+});
+
+describe("isScreeningPast", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    // Screening starts at 2026-01-01T13:30:00.
+    vi.setSystemTime(new Date("2026-01-01T13:30:00"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("is not past before the screening starts", () => {
+    vi.setSystemTime(new Date("2026-01-01T13:00:00"));
+    expect(isScreeningPast("2026-01-01", "13:30")).toBe(false);
+  });
+
+  it("is not past right when the screening starts", () => {
+    vi.setSystemTime(new Date("2026-01-01T13:30:00"));
+    expect(isScreeningPast("2026-01-01", "13:30")).toBe(false);
+  });
+
+  it("is not past within the 15-minute grace period after it starts", () => {
+    vi.setSystemTime(new Date("2026-01-01T13:45:00"));
+    expect(isScreeningPast("2026-01-01", "13:30")).toBe(false);
+  });
+
+  it("is past once the 15-minute grace period elapses", () => {
+    vi.setSystemTime(new Date("2026-01-01T13:45:01"));
+    expect(isScreeningPast("2026-01-01", "13:30")).toBe(true);
   });
 });

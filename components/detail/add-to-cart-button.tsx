@@ -3,7 +3,13 @@
 import { useMemo, useState } from "react";
 import { Minus, Plus, ShoppingCart, Check } from "lucide-react";
 import { useCart } from "@/lib/cart-context";
-import { formatDate, formatPrice, formatTime12h, type TicketEvent } from "@/lib/events-shared";
+import {
+  formatDate,
+  formatPrice,
+  formatTime12h,
+  isScreeningPast,
+  type TicketEvent,
+} from "@/lib/events-shared";
 
 interface AddToCartButtonProps {
   event: TicketEvent;
@@ -11,13 +17,17 @@ interface AddToCartButtonProps {
 
 export default function AddToCartButton({ event }: AddToCartButtonProps) {
   const { addItem } = useCart();
-  const [screeningId, setScreeningId] = useState<string>(event.screenings[0]?.id ?? "");
+  const upcomingScreenings = useMemo(
+    () => event.screenings.filter((s) => !isScreeningPast(s.date, s.time)),
+    [event.screenings],
+  );
+  const [screeningId, setScreeningId] = useState<string>(upcomingScreenings[0]?.id ?? "");
   const [quantity, setQuantity] = useState(1);
   const [added, setAdded] = useState(false);
 
   const selected = useMemo(
-    () => event.screenings.find((s) => s.id === screeningId) ?? null,
-    [event.screenings, screeningId],
+    () => upcomingScreenings.find((s) => s.id === screeningId) ?? null,
+    [upcomingScreenings, screeningId],
   );
   const maxTickets = selected?.availableTickets ?? 0;
 
@@ -28,7 +38,7 @@ export default function AddToCartButton({ event }: AddToCartButtonProps) {
     setTimeout(() => setAdded(false), 2000);
   };
 
-  const noScreenings = event.screenings.length === 0;
+  const noScreenings = upcomingScreenings.length === 0;
   const disabled = added || noScreenings || !selected || maxTickets === 0;
 
   return (
@@ -48,7 +58,7 @@ export default function AddToCartButton({ event }: AddToCartButtonProps) {
             }}
             className="rounded-lg border border-border bg-input px-3 py-2 text-sm text-foreground"
           >
-            {event.screenings.map((s) => (
+            {upcomingScreenings.map((s) => (
               <option key={s.id} value={s.id}>
                 {formatDate(s.date)} · {formatTime12h(s.time)}
                 {s.availableTickets === 0 ? " (agotado)" : ""}
