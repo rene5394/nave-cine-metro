@@ -123,6 +123,26 @@ describe("startCheckout", () => {
     expect(result).toEqual({ error: 'Función no encontrada para "Rock Concert"' });
   });
 
+  it("returns an error when the screening's date/time has already passed", async () => {
+    const event = makeEvent({ id: EVENT_ID_1, name: "Rock Concert" });
+    const screening = makeScreening({
+      id: SCREENING_ID_1,
+      eventId: EVENT_ID_1,
+      date: "2020-01-01",
+      time: "20:00",
+    });
+    prismaMock.event.findMany.mockResolvedValue([event]);
+    prismaMock.screening.findMany.mockResolvedValue([screening]);
+
+    const result = await startCheckout([
+      { eventId: EVENT_ID_1, screeningId: SCREENING_ID_1, quantity: 1 },
+    ]);
+
+    expect(result).toEqual({
+      error: 'La función de "Rock Concert" ya pasó y no está disponible para compra.',
+    });
+  });
+
   it("returns an error when requested quantity exceeds availableTickets", async () => {
     const event = makeEvent({ id: EVENT_ID_1, name: "Rock Concert" });
     const screening = makeScreening({
@@ -241,14 +261,14 @@ describe("startCheckout", () => {
     const screening1 = makeScreening({
       id: SCREENING_ID_1,
       eventId: EVENT_ID_1,
-      date: "2026-01-01",
+      date: "2099-01-01",
       time: "10:00",
       availableTickets: 5,
     });
     const screening2 = makeScreening({
       id: SCREENING_ID_2,
       eventId: EVENT_ID_2,
-      date: "2026-02-02",
+      date: "2099-02-02",
       time: "22:00",
       availableTickets: 5,
     });
@@ -271,7 +291,7 @@ describe("startCheckout", () => {
         orderName: "Event One",
         metadata: [
           { name: "orderId", value: ORDER_ID },
-          { name: "date", value: "2026-01-01" },
+          { name: "date", value: "2099-01-01" },
           { name: "time", value: "10:00" },
           { name: "venue", value: "Venue One" },
         ],

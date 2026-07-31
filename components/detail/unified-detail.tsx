@@ -3,7 +3,7 @@
 import Image from "next/image";
 import { Minus, Plus, ShoppingCart } from "lucide-react";
 import { useMemo, useState } from "react";
-import { type TicketEvent, formatDate, formatTime12h } from "@/lib/events-shared";
+import { type TicketEvent, formatDate, formatTime12h, isScreeningPast } from "@/lib/events-shared";
 import { useCart } from "@/lib/cart-context";
 import { useEventModal } from "@/lib/event-modal-context";
 
@@ -18,7 +18,8 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
 
   const screeningsByDate = useMemo(() => {
     const map = new Map<string, typeof event.screenings>();
-    const sorted = [...event.screenings].sort((a, b) =>
+    const upcoming = event.screenings.filter((s) => !isScreeningPast(s.date, s.time));
+    const sorted = [...upcoming].sort((a, b) =>
       a.date === b.date ? a.time.localeCompare(b.time) : a.date.localeCompare(b.date),
     );
     for (const s of sorted) {
@@ -32,9 +33,7 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
   const uniqueDates = useMemo(() => Array.from(screeningsByDate.keys()), [screeningsByDate]);
 
   const defaultDate = useMemo(() => {
-    if (uniqueDates.length === 0) return "";
-    const today = new Date().toISOString().slice(0, 10);
-    return uniqueDates.find((d) => d >= today) ?? uniqueDates[uniqueDates.length - 1];
+    return uniqueDates[0] ?? "";
   }, [uniqueDates]);
 
   const [selectedDate, setSelectedDate] = useState<string>(defaultDate);
@@ -108,7 +107,7 @@ export default function UnifiedDetail({ event }: UnifiedDetailProps) {
             {/* Información Section */}
             <div className="p-5">
               <h3 className="mb-4 text-lg font-bold text-gray-900">Función</h3>
-              {event.screenings.length === 0 ? (
+              {uniqueDates.length === 0 ? (
                 <p className="text-sm text-gray-600">No hay funciones disponibles.</p>
               ) : (
                 <div className="space-y-4">
