@@ -74,8 +74,8 @@ const EVENTS = [
 
 const DAILY_TIMES = ["16:00", "19:00", "21:30"];
 const TICKETS_PER_SCREENING = 45;
-const DAYS_FROM_TODAY = -3;
-const SCREENING_DAYS = 2;
+const DAYS_FROM_TODAY = 5;
+const SCREENING_DAYS = 7;
 
 function generateScreeningDates(): string[] {
   const start = new Date();
